@@ -45,10 +45,9 @@ int main()
     std::cout << "Second sentence: " << sentence2 << "\n";
     if (has_character(sentence2, 'o'))
     {
-        replace_character(sentence2, 'o', 'O');
+        replace_character((char*)sentence2, 'o', 'O');
     }
     std::cout << "After replacing 'o' with 'O': " << sentence2 << "\n";
-
 
     return EXIT_SUCCESS;
 }
