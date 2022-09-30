@@ -1,5 +1,10 @@
 // Copyright (c) 2022, Piotr Staniszewski
 
+/*
+ * This is a dummy application to demonstrate the gdb in action.
+ * It is neither well written, nor correct!
+ */
+
 #include <iostream>
 #include <cstring>
 
@@ -41,11 +46,11 @@ int main()
     }
     std::cout << "After replacing 'H' with 'Y': " << sentence << "\n";
 
-    const char* sentence2 = "Good bye, World!";
+    const char *sentence2 = "Good bye, World!";
     std::cout << "Second sentence: " << sentence2 << "\n";
     if (has_character(sentence2, 'o'))
     {
-        replace_character((char*)sentence2, 'o', 'O');
+        replace_character((char *)sentence2, 'o', 'O');
     }
     std::cout << "After replacing 'o' with 'O': " << sentence2 << "\n";
 
