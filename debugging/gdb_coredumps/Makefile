@@ -6,7 +6,9 @@ CFLAGS = -Wall -Wextra -pedantic -o2 -g
 TARGET_LIB = libbestiary.so
 TARGET_APP = game
 
-all: ${TARGET_LIB} ${TARGET_APP} ${TARGET_ENV} game.dbg bestiary.dbg
+all: ${TARGET_LIB} ${TARGET_APP}
+
+dbg: game.dbg bestiary.dbg
 
 ${TARGET_LIB}: bestiary.o
 	$(CXX) -shared bestiary.o -o ${TARGET_LIB}
@@ -20,13 +22,13 @@ ${TARGET_APP}: game.o
 game.o: game.cpp
 	$(CXX) $(CFLAGS) -c game.cpp -o game.o
 
-game.dbg:
-	objcopy --only-keep-debug game game.dbg
+game.dbg: ${TARGET_APP}
+	objcopy --only-keep-debug ${TARGET_APP} ${TARGET_APP}.dbg
 	strip --strip-debug --strip-unneeded ${TARGET_APP} 
 
-bestiary.dbg:
-	objcopy --only-keep-debug libbestiary.so libbestiary.so.dbg
+bestiary.dbg: ${TARGET_LIB}
+	objcopy --only-keep-debug ${TARGET_LIB} ${TARGET_LIB}.dbg
 	strip --strip-debug --strip-unneeded ${TARGET_LIB}
 
 clean:
-	$(RM) *.o *.so game.o game *.dbg
+	$(RM) *.o *.so ${TARGET_APP} *.dbg core*
