@@ -95,10 +95,94 @@ In less perfect cases, the only way to get proper binary and symbols might be to
 
 ## Enabling core dumps
 
+The `ulimit` command can be used to check or set the resource limit of the current user.
+
 ```shell
-sudo service apport stop
+ulimit -a
+real-time non-blocking time  (microseconds, -R) unlimited
+core file size              (blocks, -c) 0
+data seg size               (kbytes, -d) unlimited
+scheduling priority                 (-e) 0
+file size                   (blocks, -f) unlimited
+pending signals                     (-i) 63730
+max locked memory           (kbytes, -l) 2048192
+max memory size             (kbytes, -m) unlimited
+open files                          (-n) 1024
+pipe size                (512 bytes, -p) 8
+POSIX message queues         (bytes, -q) 819200
+real-time priority                  (-r) 0
+stack size                  (kbytes, -s) 8192
+cpu time                   (seconds, -t) unlimited
+max user processes                  (-u) 63730
+virtual memory              (kbytes, -v) unlimited
+file locks                          (-x) unlimited
+```
+
+The system resources are defined in a configuration file: `/etc/security/limits.conf`.
+The "soft" limit is manageable by the user, while "hard" limit defines the physical limit the user can reach.
+
+For this particular tutorial, the limit of core file size for the user is important.
+Let's set `unlimited`:
+
+```shell
 ulimit -c unlimited
 ```
+
+### Hint for Ubuntu
+
+I noticed that in last LTS releases of Ubuntu the core dumps are not generated as expected. It seems that stopping the apport service helps: 
+
+```shell
+sudo service apport stop
+```
+
+## Running the test application
+
+The time has come to run the `game` application:
+
+```shell
+LD_LIBRARY_PATH=. ./game
+Bestiary game
+...
+Błąd w obliczeniach zmiennoprzecinkowych (zrzut pamięci)
+```
+
+Ups... We have a core dump!
+
+```shell
+ls | grep core*
+core.2982
+```
+
+## Analysing the core dump
+
+To analyse the core dump, let's use gdb with binary and generated core:
+
+```shell
+gdb game core.2982
+```
+
+Unfortunately, there are no symbols found, we shall not expect a nice output then:
+
+```shell
+Reading symbols from game...
+(No debugging symbols found in game)
+```
+
+Anyway, the backtrace shows some useful information, we already know that the crash happened within `libbestiary.so`:
+
+```shell
+(gdb) bt
+#0  0x00007f9f4b826ad8 in Bestiary::lucky_shot(Bestiary::Fight_result, unsigned char, unsigned char) () from ./libbestiary.so
+#1  0x00007f9f4b826cad in Bestiary::fight(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Bestiary::Attribute) () from ./libbestiary.so
+#2  0x0000557323275609 in ?? ()
+#3  0x00007f9f4b3c7d90 in __libc_start_call_main (main=main@entry=0x557323275489, argc=argc@entry=1, argv=argv@entry=0x7ffd3339b528) at ../sysdeps/nptl/libc_start_call_main.h:58
+#4  0x00007f9f4b3c7e40 in __libc_start_main_impl (main=0x557323275489, argc=1, argv=0x7ffd3339b528, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, stack_end=0x7ffd3339b518)
+    at ../csu/libc-start.c:392
+#5  0x00005573232753c5 in ?? ()
+```
+
+TBD
 
 ## Load the symbols of application
 
