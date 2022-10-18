@@ -5,7 +5,7 @@
 
 #include "bestiary.h"
 
-class Arena
+class Arena // Unused
 {
 public:
     Arena();
