@@ -2,6 +2,10 @@
 
 #include <iostream>
 #include <iomanip>
+#include <vector>
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
 
 namespace char_literals
 {
@@ -83,6 +87,35 @@ namespace constexpr_features
     constexpr const double *MY_OUTPUT_PTR = increment_by_one(MY_PTR); // unchanged and compiles
 }
 
+namespace structured_bindings
+{
+    struct A
+    {
+        int m_x{5};
+        std::string m_text{"five"};
+    };
+
+    void experiment();
+}
+
+namespace if_switch_initializer
+{
+    void experiment();
+}
+
+namespace templates {
+
+    // Fold expressions
+    template<typename T, typename ...Args>
+    auto mean(const T& value, const Args&... values)
+    {
+        constexpr auto size = 1 + sizeof...(values);
+        return (value + ... + values) / size;
+    }
+
+    void experiment();
+}
+
 int main()
 {
     std::cout << "C++17 features\n";
@@ -95,6 +128,15 @@ int main()
 
     // Lambda capture of *this
     lambda_capture::experiment();
+
+    // Structured bindings
+    structured_bindings::experiment();
+
+    // If and switch initializers
+    if_switch_initializer::experiment();
+
+    // New template features
+    templates::experiment();
 
     return EXIT_SUCCESS;
 }
@@ -132,4 +174,51 @@ void lambda_capture::experiment()
 {
     A obj;
     obj.method();
+}
+
+void structured_bindings::experiment()
+{
+    // Binding to tuple values
+    std::tuple<int, char, double> tup(1, 'z', 3.14);
+    const auto &[x, y, z] = tup;
+    std::cout << x << ", " << y << ", " << z << "\n";
+
+    // Binding to data members
+    A obj;
+    const auto [a, b] = obj;
+    std::cout << a << ", " << b << "\n";
+
+    // Binding to array items
+    float floats[3] = {1.1, 2.2, 3.3};
+    auto [f1, f2, f3] = floats;
+    std::cout << f1 << ", " << f2 << ", " << f3 << "\n";
+}
+
+void if_switch_initializer::experiment()
+{
+    std::vector<int> ints = {1, 5, 3, 9, 7, 6, 8, 2, 1, 0};
+    if (auto it = std::find(std::begin(ints), std::end(ints), 9); it != std::end(ints))
+    {
+        std::cout << "9 found in position: " << std::distance(std::begin(ints), it) << "\n";
+    }
+
+    std::srand(std::time(nullptr));
+    switch (int i = std::rand() % 2; i)
+    {
+    case 0:
+        std::cout << "0\n";
+        break;
+    default:
+        std::cout << "1\n";
+    }
+}
+
+void templates::experiment()
+{
+    std::cout << "mean of floats: " << mean(1.1f, 3.3f, 5.5f) << "\n";
+    std::cout << "mean of ints: " << mean(3, 9, 6) << "\n";
+    std::cout << "mean of mix: " << mean(1.1f, 4U, 7.2) << "\n";
+    
+    // Won't compile: candidate expects at least 1 argument, 0 provided
+    //mean();
 }

@@ -82,3 +82,80 @@ Possible in **C++17** to capture `*this` by copy
     constexpr const double *MY_PTR = &MY_DOUBLE;
     constexpr const double *MY_OUTPUT_PTR = increment_by_one(MY_PTR); // unchanged and compiles
 ```
+
+## Structured bindings
+
+Binds the specified names to subobjects or elements of array
+
+```cpp
+    struct A
+    {
+        int m_x{5};
+        std::string m_text{"five"};
+    };
+
+    // Binding to tuple values
+    std::tuple<int, char, double> tup(1, 'z', 3.14);
+    const auto& [x, y, z] = tup;
+    std::cout << x << ", " << y << ", " << z << "\n";       // 1, z, 3.14
+
+    // Binding to data members
+    A obj;
+    const auto [a, b] = obj;
+    std::cout << a << ", " << b << "\n";                    // 5, five
+
+    // Binding to array items
+    float floats[3] = {1.1, 2.2, 3.3};
+    auto [f1, f2, f3] = floats;
+    std::cout << f1 << ", " << f2 << ", " << f3 << "\n";    // 1.1, 2.2, 3.3
+```
+
+## If and switch initializers
+
+`if` with initializer
+
+```cpp
+    std::vector<int> ints = {1, 5, 3, 9, 7, 6, 8, 2, 1, 0};
+    if (auto it = std::find(std::begin(ints), std::end(ints), 9); it != std::end(ints))
+    {
+        std::cout << "9 found in position: " << std::distance(std::begin(ints), it) << "\n";    // 9 found in position: 3
+    }
+```
+
+`switch` with initializer
+
+```cpp
+    std::srand(std::time(nullptr));
+    switch (int i = std::rand() % 2; i)
+    {
+    case 0:
+        std::cout << "0\n";
+        break;
+    default:
+        std::cout << "1\n";
+    }
+```
+
+## Mandatory elision of copy/move operations
+
+Return value optimization is mandatory
+
+## Fold expressions
+
+Reduces (folds) a parameter pack using a binary operator
+
+```cpp
+    template<typename T, typename ...Args>
+    auto mean(const T& value, const Args&... values)
+    {
+        constexpr auto size = 1 + sizeof...(values);
+        return (value + ... + values) / size;
+    }
+
+    std::cout << "mean of floats: " << mean(1.1f, 3.3f, 5.5f) << "\n";  // 3.3
+    std::cout << "mean of ints: " << mean(3, 9, 6) << "\n";             // 6
+    std::cout << "mean of mix: " << mean(1.1f, 4U, 7.2) << "\n";        // 4.1
+    
+    // Won't compile: candidate expects at least 1 argument, 0 provided
+    //mean();
+```
