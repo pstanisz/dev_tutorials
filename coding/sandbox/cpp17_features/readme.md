@@ -145,9 +145,21 @@ Return value optimization is mandatory
 Reduces (folds) a parameter pack using a binary operator
 
 ```cpp
-    template<typename T, typename ...Args>
-    auto mean(const T& value, const Args&... values)
+    template <typename... Args>
+    struct check_condition : std::true_type
+    {};
+
+    template <typename Arg, typename... Args>
+    struct check_condition<Arg, Args...> : std::conditional_t<Arg::value, check_condition<Args...>, std::false_type>
+    {};
+
+    // Fold expressions
+    template <typename T, typename... Args>
+    auto mean(const T &value, const Args &...values)
     {
+        static_assert(check_condition<std::is_arithmetic<T>>::value);
+        static_assert(check_condition<std::is_arithmetic<Args>...>::value);
+
         constexpr auto size = 1 + sizeof...(values);
         return (value + ... + values) / size;
     }
@@ -156,6 +168,11 @@ Reduces (folds) a parameter pack using a binary operator
     std::cout << "mean of ints: " << mean(3, 9, 6) << "\n";             // 6
     std::cout << "mean of mix: " << mean(1.1f, 4U, 7.2) << "\n";        // 4.1
     
+    // Won't compile: error: static assertion failed: static_assert(check_condition<std::is_arithmetic<Args>...>::value);
+    // int x = 5;
+    // const int* ptr = &x; 
+    // std::cout << "mean of non-arithmetic : " << mean(1, ptr, 3.14) << "\n";
+
     // Won't compile: candidate expects at least 1 argument, 0 provided
-    //mean();
+    // mean();
 ```

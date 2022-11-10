@@ -103,12 +103,25 @@ namespace if_switch_initializer
     void experiment();
 }
 
-namespace templates {
+namespace templates
+{
+    template <typename... Args>
+    struct check_condition : std::true_type
+    {
+    };
+
+    template <typename Arg, typename... Args>
+    struct check_condition<Arg, Args...> : std::conditional_t<Arg::value, check_condition<Args...>, std::false_type>
+    {
+    };
 
     // Fold expressions
-    template<typename T, typename ...Args>
-    auto mean(const T& value, const Args&... values)
+    template <typename T, typename... Args>
+    auto mean(const T &value, const Args &...values)
     {
+        static_assert(check_condition<std::is_arithmetic<T>>::value);
+        static_assert(check_condition<std::is_arithmetic<Args>...>::value);
+
         constexpr auto size = 1 + sizeof...(values);
         return (value + ... + values) / size;
     }
@@ -218,7 +231,12 @@ void templates::experiment()
     std::cout << "mean of floats: " << mean(1.1f, 3.3f, 5.5f) << "\n";
     std::cout << "mean of ints: " << mean(3, 9, 6) << "\n";
     std::cout << "mean of mix: " << mean(1.1f, 4U, 7.2) << "\n";
-    
+
+    // Won't compile: error: static assertion failed: static_assert(check_condition<std::is_arithmetic<Args>...>::value);
+    //int x = 5;
+    //const int* ptr = &x; 
+    //std::cout << "mean of non-arithmetic : " << mean(1, ptr, 3.14) << "\n";
+
     // Won't compile: candidate expects at least 1 argument, 0 provided
-    //mean();
+    // mean();
 }
