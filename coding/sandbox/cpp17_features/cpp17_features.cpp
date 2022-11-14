@@ -126,6 +126,13 @@ namespace templates
         return (value + ... + values) / size;
     }
 
+    template<typename T>
+    struct Fruit {
+        Fruit(T) {};
+
+        T m_value;
+    };
+
     void experiment();
 }
 
@@ -239,4 +246,21 @@ void templates::experiment()
 
     // Won't compile: candidate expects at least 1 argument, 0 provided
     // mean();
+
+    // Class template deduction
+    std::pair p = {2.5, 1U};    // types deduced from the type of initializer
+    auto [p1, p2] = p;
+    static_assert(std::is_same_v<decltype(p1), double>);
+    static_assert(std::is_same_v<decltype(p2), unsigned>);
+    
+    std::tuple t = {'c', 10, "foo"};
+    auto [t1, t2, t3] = t;
+    static_assert(std::is_same_v<decltype(t1), char>);
+    static_assert(std::is_same_v<decltype(t2), int>);
+    static_assert(std::is_same_v<decltype(t3), const char*>);
+
+    // Deduction from new expression
+    auto s = new Fruit{5};
+    static_assert(std::is_same_v<decltype(s->m_value), int>);
+    delete s;
 }
