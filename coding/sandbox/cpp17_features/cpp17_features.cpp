@@ -126,11 +126,21 @@ namespace templates
         return (value + ... + values) / size;
     }
 
-    template<typename T>
-    struct Fruit {
-        Fruit(T) {};
+    template <typename T>
+    struct Fruit
+    {
+        Fruit(T) {}
 
         T m_value;
+    };
+
+    // Non-type template parameters declared from auto
+    template <auto N>
+    struct Vegetable
+    {
+        Vegetable() {
+            std::cout << "Vege with " << N << std::endl;
+        }
     };
 
     void experiment();
@@ -240,27 +250,33 @@ void templates::experiment()
     std::cout << "mean of mix: " << mean(1.1f, 4U, 7.2) << "\n";
 
     // Won't compile: error: static assertion failed: static_assert(check_condition<std::is_arithmetic<Args>...>::value);
-    //int x = 5;
-    //const int* ptr = &x; 
-    //std::cout << "mean of non-arithmetic : " << mean(1, ptr, 3.14) << "\n";
+    // int x = 5;
+    // const int* ptr = &x;
+    // std::cout << "mean of non-arithmetic : " << mean(1, ptr, 3.14) << "\n";
 
     // Won't compile: candidate expects at least 1 argument, 0 provided
     // mean();
 
     // Class template deduction
-    std::pair p = {2.5, 1U};    // types deduced from the type of initializer
+    std::pair p = {2.5, 1U}; // types deduced from the type of initializer
     auto [p1, p2] = p;
     static_assert(std::is_same_v<decltype(p1), double>);
     static_assert(std::is_same_v<decltype(p2), unsigned>);
-    
+
     std::tuple t = {'c', 10, "foo"};
     auto [t1, t2, t3] = t;
     static_assert(std::is_same_v<decltype(t1), char>);
     static_assert(std::is_same_v<decltype(t2), int>);
-    static_assert(std::is_same_v<decltype(t3), const char*>);
+    static_assert(std::is_same_v<decltype(t3), const char *>);
 
     // Deduction from new expression
     auto s = new Fruit{5};
     static_assert(std::is_same_v<decltype(s->m_value), int>);
     delete s;
+
+    // Non-type template parameters declared with auto
+    static constexpr int value {10};
+    Vegetable<5> v1;
+    Vegetable<'x'> v2;
+    Vegetable<&value> v3;
 }

@@ -203,3 +203,20 @@ Deduction from new expression
     static_assert(std::is_same_v<decltype(s->m_value), int>);
     delete s;
 ```
+
+Non-type template parameters declared with auto
+
+```cpp
+    template <auto N>
+    struct Vegetable
+    {
+        Vegetable() {
+            std::cout << "Vege with " << N << std::endl;
+        }
+    };
+
+    static constexpr int value {10};
+    Vegetable<5> v1;        // Vege with 5
+    Vegetable<'x'> v2;      // Vege with x
+    Vegetable<&value> v3;   // Vege with 0x5557e2381094
+```
