@@ -220,3 +220,49 @@ Non-type template parameters declared with auto
     Vegetable<'x'> v2;      // Vege with x
     Vegetable<&value> v3;   // Vege with 0x5557e2381094
 ```
+
+## Simplified nested namespaces
+
+```cpp
+    namespace namespaces
+    {
+        namespace simple::nested
+        {
+            void experiment() {}
+        }
+    }
+```
+
+## Attributes
+
+### [[maybe_unused]]
+
+```cpp
+    void attributes::experiment([[maybe_unused]]int i)
+    {
+    }
+```
+
+###  [[fallthrough]]
+
+```cpp
+    int z = 2;
+    switch(z) {
+        case 1:
+            std::cout << "bla\n";
+            [[fallthrough]];    // Silenced error: this statement may fall through [-Werror=implicit-fallthrough=]
+        case 2:
+            std::cout << "one or two\n";
+        default:
+            break;
+    }
+```
+
+### [[nodiscard]]
+
+```cpp
+    [[nodiscard]]int foo() { return 5; }; 
+
+    // Won't compile: ignoring return value of ‘int attributes::foo()’, declared with attribute ‘nodiscard’
+    foo();
+```

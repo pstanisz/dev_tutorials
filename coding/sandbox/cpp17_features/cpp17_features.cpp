@@ -138,12 +138,28 @@ namespace templates
     template <auto N>
     struct Vegetable
     {
-        Vegetable() {
+        Vegetable()
+        {
             std::cout << "Vege with " << N << std::endl;
         }
     };
 
     void experiment();
+}
+
+namespace namespaces
+{
+    namespace simple::nested
+    {
+        void experiment() {}
+    }
+}
+
+namespace attributes
+{
+    void experiment(int i);
+
+    [[nodiscard]] int foo() { return 5; };
 }
 
 int main()
@@ -167,6 +183,12 @@ int main()
 
     // New template features
     templates::experiment();
+
+    // Namespaces
+    namespaces::simple::nested::experiment();
+
+    // Attributes
+    attributes::experiment(5);
 
     return EXIT_SUCCESS;
 }
@@ -275,8 +297,26 @@ void templates::experiment()
     delete s;
 
     // Non-type template parameters declared with auto
-    static constexpr int value {10};
+    static constexpr int value{10};
     Vegetable<5> v1;
     Vegetable<'x'> v2;
     Vegetable<&value> v3;
+}
+
+void attributes::experiment([[maybe_unused]] int i)
+{
+    int z = 2;
+    switch (z)
+    {
+    case 1:
+        std::cout << "bla\n";
+        [[fallthrough]];
+    case 2:
+        std::cout << "one or two\n";
+    default:
+        break;
+    }
+
+    // Won't compile: ignoring return value of ‘int attributes::foo()’, declared with attribute ‘nodiscard’
+    //foo();
 }
