@@ -21,9 +21,8 @@ target_include_directories(
 )
 
 target_compile_options(${TARGET_NAME} PUBLIC -Wall -Wextra -pedantic)
-target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
+target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
 
 enable_testing()
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
-
-add_subdirectory(test EXCLUDE_FROM_ALL)
+#add_subdirectory(test EXCLUDE_FROM_ALL)
+add_subdirectory(test)
