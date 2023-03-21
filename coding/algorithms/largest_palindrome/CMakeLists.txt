@@ -4,7 +4,9 @@ project(largest_palindrome)
 
 set(TARGET_NAME ${PROJECT_NAME})
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+
+find_package(benchmark REQUIRED)
 
 # Location of header and source files in project
 set(INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -22,7 +24,7 @@ target_include_directories(
 
 target_compile_options(${TARGET_NAME} PUBLIC -Wall -Wextra -pedantic)
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
+target_link_libraries(${TARGET_NAME} benchmark::benchmark)
 
 enable_testing()
-#add_subdirectory(test EXCLUDE_FROM_ALL)
 add_subdirectory(test)
