@@ -22,7 +22,7 @@ target_include_directories(
     ${INC_DIR}
 )
 
-target_compile_options(${TARGET_NAME} PUBLIC -Wall -Wextra -pedantic)
+target_compile_options(${TARGET_NAME} PUBLIC -Wall -Wextra -pedantic -O0)
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
 target_link_libraries(${TARGET_NAME} benchmark::benchmark)
 

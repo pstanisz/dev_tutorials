@@ -11,7 +11,8 @@ constexpr uint64_t MAX_N_DIGIT_NUMBER = 99U;
 constexpr uint64_t MAX_PRODUCT_OF_N_DIGIT_NUMBER = MAX_N_DIGIT_NUMBER * MAX_N_DIGIT_NUMBER;
 
 // Calculating all possibilities
-auto brute_force()
+template <typename PalindromeFun>
+auto brute_force(PalindromeFun &&fun)
 {
     std::tuple<uint64_t, uint64_t, uint64_t> result = std::make_tuple(0U, 0U, 0U);
     uint64_t number1 = MAX_N_DIGIT_NUMBER;
@@ -22,7 +23,7 @@ auto brute_force()
         while (number2 > 0)
         {
             auto product = number1 * number2;
-            if (is_palindrome(product))
+            if (fun(product))
             {
                 if (std::get<0>(result) < product)
                 {
@@ -40,7 +41,8 @@ auto brute_force()
 }
 
 // Calculating all possibilities but skipping decrementing number2 after finding first palindrome
-auto brute_force_better()
+template <typename PalindromeFun>
+auto brute_force_better(PalindromeFun &&fun)
 {
     std::tuple<uint64_t, uint64_t, uint64_t> result = std::make_tuple(0U, 0U, 0U);
     uint64_t number1 = MAX_N_DIGIT_NUMBER;
@@ -51,7 +53,7 @@ auto brute_force_better()
         while (number2 > 0)
         {
             auto product = number1 * number2;
-            if (is_palindrome(product))
+            if (fun(product))
             {
                 if (std::get<0>(result) < product)
                 {
@@ -72,15 +74,16 @@ auto brute_force_better()
 }
 
 // First idea of solving the problem
-auto first_idea()
+template <typename PalindromeFun>
+auto first_idea(PalindromeFun &&fun)
 {
-    bool found {false};
+    bool found{false};
     std::tuple<uint64_t, uint64_t, uint64_t> result = std::make_tuple(0U, 0U, 0U);
 
     uint64_t n = MAX_PRODUCT_OF_N_DIGIT_NUMBER;
     while (n > 0)
     {
-        if (is_palindrome(n))
+        if (fun(n))
         {
             uint64_t number1 = MAX_N_DIGIT_NUMBER;
             while (number1--)
@@ -103,7 +106,8 @@ auto first_idea()
             }
         }
         --n;
-        if (found) break;
+        if (found)
+            break;
     }
 
     return result;
@@ -113,7 +117,7 @@ static void benchmark_brute_force(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        std::tuple<uint64_t, uint64_t, uint64_t> result = brute_force();
+        std::tuple<uint64_t, uint64_t, uint64_t> result = brute_force(is_palindrome<uint64_t>);
         // std::cout << std::get<0>(result) << " = " << std::get<1>(result) << " * " << std::get<2>(result) << std::endl;
     }
 }
@@ -123,7 +127,7 @@ static void benchmark_brute_force_better(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        std::tuple<uint64_t, uint64_t, uint64_t> result = brute_force_better();
+        std::tuple<uint64_t, uint64_t, uint64_t> result = brute_force_better(is_palindrome<uint64_t>);
         // std::cout << std::get<0>(result) << " = " << std::get<1>(result) << " * " << std::get<2>(result) << std::endl;
     }
 }
@@ -133,10 +137,20 @@ static void benchmark_first_idea(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        std::tuple<uint64_t, uint64_t, uint64_t> result = first_idea();
-        //std::cout << std::get<0>(result) << " = " << std::get<1>(result) << " * " << std::get<2>(result) << std::endl;
+        std::tuple<uint64_t, uint64_t, uint64_t> result = first_idea(is_palindrome<uint64_t>);
+        // std::cout << std::get<0>(result) << " = " << std::get<1>(result) << " * " << std::get<2>(result) << std::endl;
     }
 }
 BENCHMARK(benchmark_first_idea);
+
+static void benchmark_is_palindrome(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        is_palindrome(9990999);
+        // std::cout << std::get<0>(result) << " = " << std::get<1>(result) << " * " << std::get<2>(result) << std::endl;
+    }
+}
+BENCHMARK(benchmark_is_palindrome);
 
 BENCHMARK_MAIN();

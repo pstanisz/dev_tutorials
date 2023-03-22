@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(Palindrome_number, first)
+TEST(Palindrome_number, test_is_palindrome)
 {
     EXPECT_FALSE(is_palindrome(12));
     EXPECT_FALSE(is_palindrome(123));
