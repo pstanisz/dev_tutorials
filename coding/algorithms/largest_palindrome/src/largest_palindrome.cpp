@@ -7,27 +7,29 @@
 #include <iostream>
 #include <tuple>
 
-constexpr uint64_t MAX_N_DIGIT_NUMBER = 99U;
+constexpr uint64_t MAX_N_DIGIT_NUMBER = 999U;
 constexpr uint64_t MAX_PRODUCT_OF_N_DIGIT_NUMBER = MAX_N_DIGIT_NUMBER * MAX_N_DIGIT_NUMBER;
 
 // Calculating all possibilities
 template <typename PalindromeFun>
-auto brute_force(PalindromeFun &&fun)
+auto brute_force(PalindromeFun &&check_palindrome)
 {
     std::tuple<uint64_t, uint64_t, uint64_t> result = std::make_tuple(0U, 0U, 0U);
+    auto& largest_palindrome = std::get<0>(result);
+
     uint64_t number1 = MAX_N_DIGIT_NUMBER;
 
-    while (number1 > 0)
+    while (number1 > 0U)
     {
         uint64_t number2 = MAX_N_DIGIT_NUMBER;
-        while (number2 > 0)
+        while (number2 > 0U)
         {
             auto product = number1 * number2;
-            if (fun(product))
+            if (check_palindrome(product))
             {
-                if (std::get<0>(result) < product)
+                if (product > largest_palindrome)
                 {
-                    std::get<0>(result) = product;
+                    largest_palindrome = product;
                     std::get<1>(result) = number1;
                     std::get<2>(result) = number2;
                 }
@@ -42,22 +44,24 @@ auto brute_force(PalindromeFun &&fun)
 
 // Calculating all possibilities but skipping decrementing number2 after finding first palindrome
 template <typename PalindromeFun>
-auto brute_force_better(PalindromeFun &&fun)
+auto brute_force_better(PalindromeFun &&check_palindrome)
 {
     std::tuple<uint64_t, uint64_t, uint64_t> result = std::make_tuple(0U, 0U, 0U);
+    auto& largest_palindrome = std::get<0>(result);
+
     uint64_t number1 = MAX_N_DIGIT_NUMBER;
 
-    while (number1 > 0)
+    while (number1 > 0U)
     {
         uint64_t number2 = MAX_N_DIGIT_NUMBER;
-        while (number2 > 0)
+        while (number2 > 0U)
         {
             auto product = number1 * number2;
-            if (fun(product))
+            if (check_palindrome(product))
             {
-                if (std::get<0>(result) < product)
+                if (product > largest_palindrome)
                 {
-                    std::get<0>(result) = product;
+                    largest_palindrome = product;
                     std::get<1>(result) = number1;
                     std::get<2>(result) = number2;
 
@@ -75,7 +79,7 @@ auto brute_force_better(PalindromeFun &&fun)
 
 // First idea of solving the problem
 template <typename PalindromeFun>
-auto first_idea(PalindromeFun &&fun)
+auto first_idea(PalindromeFun &&check_palindrome)
 {
     bool found{false};
     std::tuple<uint64_t, uint64_t, uint64_t> result = std::make_tuple(0U, 0U, 0U);
@@ -83,19 +87,19 @@ auto first_idea(PalindromeFun &&fun)
     uint64_t n = MAX_PRODUCT_OF_N_DIGIT_NUMBER;
     while (n > 0)
     {
-        if (fun(n))
+        if (check_palindrome(n))
         {
             uint64_t number1 = MAX_N_DIGIT_NUMBER;
-            while (number1--)
+            while (number1 > 0U)
             {
-                uint64_t number2 = n / number1;
+                const uint64_t number2 = n / number1;
 
                 if (number2 > MAX_N_DIGIT_NUMBER)
                 {
                     break;
                 }
 
-                if (n % number1 == 0)
+                if (n % number1 == 0U)
                 {
                     std::get<0>(result) = n;
                     std::get<1>(result) = number1;
@@ -103,6 +107,8 @@ auto first_idea(PalindromeFun &&fun)
                     found = true;
                     break;
                 }
+
+                --number1;
             }
         }
         --n;
