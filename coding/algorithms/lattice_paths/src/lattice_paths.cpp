@@ -4,10 +4,10 @@
 
 #include <iostream>
 #include <array>
+#include <optional>
 
-constexpr unsigned long GRID_WIDTH = 1U;
-constexpr unsigned long GRID_HEIGHT = 1U;
-constexpr unsigned long NODE_COUNT = 4U * GRID_WIDTH * GRID_HEIGHT;
+// constexpr unsigned long GRID_WIDTH = 1U;
+// constexpr unsigned long GRID_HEIGHT = 1U;
 
 template <unsigned long WIDTH, unsigned long HEIGHT>
 struct Node
@@ -16,15 +16,29 @@ struct Node
 
     Node(unsigned long x, unsigned long y) : m_x{x}, m_y{y}
     {
-        std::cout << "at(" << get_idx() << ") = Node(" << x << "," << y << ")\n";
+        //auto idx = calculate_idx(m_x, m_y);
+        //std::cout << "at(" << idx << ") = Node(" << x << "," << y << ")\n";
+        if (x + 1U < WIDTH)
+        {
+            m_left_neighbour_idx = calculate_idx(x + 1U, y);
+            //std::cout << "has neighbout left with idx = " << m_left_neighbour_idx.value() << "\n";
+        }
+        if (y + 1U < HEIGHT)
+        {
+            m_down_neighbour_idx = calculate_idx(x, y + 1U);
+            //std::cout << "has neighbout down with idx = " << m_down_neighbour_idx.value() << "\n";
+        }
     }
 
-    unsigned long get_idx() const noexcept { return m_y + m_x * WIDTH; }
+    static unsigned long calculate_idx(unsigned long x, unsigned long y) { return x + y * WIDTH; }
 
     bool is_root() const noexcept { return m_x == m_y == 0; }
 
     unsigned long m_x;
     unsigned long m_y;
+
+    std::optional<unsigned long> m_left_neighbour_idx;
+    std::optional<unsigned long> m_down_neighbour_idx;
 };
 
 template <unsigned long WIDTH, unsigned long HEIGHT>
@@ -35,7 +49,7 @@ auto build_nodes() -> std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT>
     {
         for (unsigned long j = 0U; j < HEIGHT; ++j)
         {
-            grid[j + i * (WIDTH)] = Node<WIDTH, HEIGHT>(i, j);
+            grid[Node<WIDTH, HEIGHT>::calculate_idx(i, j)] = Node<WIDTH, HEIGHT>(i, j);
         }
     }
 
@@ -43,17 +57,46 @@ auto build_nodes() -> std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT>
 }
 
 template <unsigned long WIDTH, unsigned long HEIGHT>
-void calculate_paths(const Node<WIDTH, HEIGHT> &node, unsigned long &counter)
+void calculate_paths_brute(const Node<WIDTH, HEIGHT> &node, const std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT>& nodes, unsigned long &paths)
 {
+    if (node.m_left_neighbour_idx.has_value()) {
+        calculate_paths_brute(nodes[node.m_left_neighbour_idx.value()], nodes, paths);
+    }
+
+    if (node.m_down_neighbour_idx.has_value()) {
+        calculate_paths_brute(nodes[node.m_down_neighbour_idx.value()], nodes, paths);
+    }
+
+    if (!node.m_down_neighbour_idx.has_value() && !node.m_left_neighbour_idx.has_value()) {
+        ++paths;
+    }
 }
 
-static void benchmark_calculate_paths(benchmark::State &state)
+static void benchmark_calculate_paths_brute(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        auto grid = build_nodes<2U, 2U>();
+        unsigned long paths{0UL};
+
+        auto nodes = build_nodes<2U, 2U>();
+        auto root = nodes[0];
+        calculate_paths_brute(root, nodes, paths);
+
+        //std::cout << "paths: " << paths << "\n";
     }
 }
-BENCHMARK(benchmark_calculate_paths);
+BENCHMARK(benchmark_calculate_paths_brute);
 
 BENCHMARK_MAIN();
+
+// int main() {
+//     unsigned long paths{0UL};
+
+//     auto nodes = build_nodes<4U, 4U>();
+//     auto root = nodes[0];
+//     calculate_paths_brute(root, nodes, paths);
+
+//     std::cout << "paths: " << paths << "\n";
+
+//     return 0;
+// }
