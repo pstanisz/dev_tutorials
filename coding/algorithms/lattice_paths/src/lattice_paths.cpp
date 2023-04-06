@@ -9,15 +9,15 @@
 // constexpr unsigned long GRID_WIDTH = 1U;
 // constexpr unsigned long GRID_HEIGHT = 1U;
 
-namespace Brute
+namespace Common
 {
 
-    template <unsigned long WIDTH, unsigned long HEIGHT>
+    template <unsigned WIDTH, unsigned HEIGHT>
     struct Node
     {
         Node() = default;
 
-        Node(unsigned long x, unsigned long y) : m_x{x}, m_y{y}
+        Node(unsigned x, unsigned y) : m_x{x}, m_y{y}, m_paths(0U)
         {
             // auto idx = calculate_idx(m_x, m_y);
             // std::cout << "at(" << idx << ") = Node(" << x << "," << y << ")\n";
@@ -33,24 +33,22 @@ namespace Brute
             }
         }
 
-        static unsigned long calculate_idx(unsigned long x, unsigned long y) { return x + y * WIDTH; }
+        static unsigned long calculate_idx(unsigned x, unsigned y) noexcept { return x + y * WIDTH; }
 
-        bool is_root() const noexcept { return m_x == m_y == 0; }
-
-        unsigned long m_x;
-        unsigned long m_y;
-
-        std::optional<unsigned long> m_left_neighbour_idx;
-        std::optional<unsigned long> m_down_neighbour_idx;
+        unsigned m_x{0U};
+        unsigned m_y{0U};
+        unsigned long m_paths{0U};
+        std::optional<unsigned> m_left_neighbour_idx;
+        std::optional<unsigned> m_down_neighbour_idx;
     };
 
-    template <unsigned long WIDTH, unsigned long HEIGHT>
+    template <unsigned WIDTH, unsigned HEIGHT>
     auto build_nodes() -> std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT>
     {
         std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT> grid{};
-        for (unsigned long i = 0U; i < WIDTH; ++i)
+        for (unsigned i = 0U; i < WIDTH; ++i)
         {
-            for (unsigned long j = 0U; j < HEIGHT; ++j)
+            for (unsigned j = 0U; j < HEIGHT; ++j)
             {
                 grid[Node<WIDTH, HEIGHT>::calculate_idx(i, j)] = Node<WIDTH, HEIGHT>(i, j);
             }
@@ -58,8 +56,14 @@ namespace Brute
 
         return grid;
     }
+}
 
-    template <unsigned long WIDTH, unsigned long HEIGHT>
+namespace Brute
+{
+    using Common::Node;
+
+    // Recursive, all possibilities
+    template <unsigned WIDTH, unsigned HEIGHT>
     void calculate_paths(const Node<WIDTH, HEIGHT> &node, const std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT> &nodes, unsigned long &paths)
     {
         if (node.m_left_neighbour_idx.has_value())
@@ -77,37 +81,87 @@ namespace Brute
             ++paths;
         }
     }
+}
+
+namespace Better
+{
+    using Common::Node;
+
+    // Iterates once
+    template <unsigned WIDTH, unsigned HEIGHT>
+    void calculate_paths(std::array<Node<WIDTH, HEIGHT>, WIDTH * HEIGHT> &nodes, unsigned long &paths)
+    {
+        nodes[0].m_paths = 1; // first path
+
+        // Each node has as many possible paths as its parents
+        for (auto &node : nodes)
+        {
+            // std::cout << "at(" << node.m_x << ", " << node.m_y << ") = " << node.m_weight << "\n";
+            if (node.m_left_neighbour_idx.has_value())
+            {
+                nodes[node.m_left_neighbour_idx.value()].m_paths += node.m_paths;
+            }
+
+            if (node.m_down_neighbour_idx.has_value())
+            {
+                nodes[node.m_down_neighbour_idx.value()].m_paths += node.m_paths;
+            }
+        }
+
+        paths = nodes.back().m_paths;
+    }
 
 }
 
-// static void benchmark_calculate_paths_brute(benchmark::State &state)
-// {
-//     using namespace Brute;
+static void benchmark_calculate_paths_brute(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        unsigned long paths{0UL};
 
-//     for (auto _ : state)
+        auto nodes = Common::build_nodes<13U, 13U>();
+        Brute::calculate_paths(nodes[0], nodes, paths);
+
+        //std::cout << "paths: " << paths << "\n";
+    }
+}
+BENCHMARK(benchmark_calculate_paths_brute);
+
+static void benchmark_calculate_paths_better(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        unsigned long paths{0UL};
+
+        auto nodes = Common::build_nodes<13U, 13U>();
+        Better::calculate_paths(nodes, paths);
+
+        //std::cout << "paths: " << paths << "\n";
+    }
+}
+BENCHMARK(benchmark_calculate_paths_better);
+
+BENCHMARK_MAIN();
+
+// int main()
+// {
 //     {
 //         unsigned long paths{0UL};
 
-//         auto nodes = build_nodes<5U, 5U>();
-//         auto root = nodes[0];
-//         calculate_paths(root, nodes, paths);
+//         auto nodes = Common::build_nodes<13U, 13U>();
+//         Brute::calculate_paths(nodes[0], nodes, paths);
 
-//         //std::cout << "paths: " << paths << "\n";
+//         std::cout << "(brute force) paths: " << paths << "\n";
 //     }
+
+//     {
+//         unsigned long paths{0UL};
+
+//         auto nodes = Common::build_nodes<13U, 13U>();
+//         Better::calculate_paths(nodes, paths);
+
+//         std::cout << "(better) paths: " << paths << "\n";
+//     }
+
+//     return 0;
 // }
-// BENCHMARK(benchmark_calculate_paths_brute);
-
-// BENCHMARK_MAIN();
-
-int main()
-{
-    unsigned long paths{0UL};
-
-    auto nodes = Brute::build_nodes<5U, 5U>();
-    auto root = nodes[0];
-    Brute::calculate_paths(root, nodes, paths);
-
-    std::cout << "paths: " << paths << "\n";
-
-    return 0;
-}
