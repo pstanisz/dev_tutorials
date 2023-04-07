@@ -10,9 +10,10 @@ Source: https://projecteuler.net/
 Grid size selected to make at least a few iterations with brute-force.
 
 ```shell
----------------------------------------------------------------------------
-Benchmark                                 Time             CPU   Iterations
----------------------------------------------------------------------------
-benchmark_calculate_paths_brute   148255160 ns    147876191 ns            4
-benchmark_calculate_paths_better      10254 ns        10243 ns        64192
+-------------------------------------------------------------------------------------------------
+Benchmark                                                       Time             CPU   Iterations
+-------------------------------------------------------------------------------------------------
+benchmark_calculate_paths_brute                         143024500 ns    142942250 ns            4
+benchmark_calculate_paths_better                            10021 ns        10011 ns        60769
+benchmark_calculate_paths_central_binomial_coefficient       32.4 ns         32.4 ns     21771868
 ```
