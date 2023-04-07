@@ -5,9 +5,7 @@
 #include <iostream>
 #include <array>
 #include <optional>
-
-// constexpr unsigned long GRID_WIDTH = 1U;
-// constexpr unsigned long GRID_HEIGHT = 1U;
+#include <cstdint>
 
 namespace Common
 {
@@ -113,6 +111,36 @@ namespace Better
 
 }
 
+namespace Math
+{
+    template <size_t NUM>
+    struct power2
+    {
+        static constexpr size_t m_value = NUM * NUM;
+    };
+
+    template <unsigned long NUM>
+    struct factorial
+    {
+        static constexpr size_t m_value = NUM * factorial<NUM - 1U>::m_value;
+    };
+
+    template <>
+    struct factorial<0>
+    {
+        static constexpr size_t m_value = 1U;
+    };
+
+    template <unsigned WIDTH, unsigned HEIGHT>
+    void calculate_paths(unsigned long &paths)
+    {
+        constexpr unsigned long grid_width = WIDTH - 1U;
+
+        // with central binomial coefficient
+        paths = (factorial<2U * grid_width>::m_value) / (power2<factorial<grid_width>::m_value>::m_value);
+    }
+}
+
 static void benchmark_calculate_paths_brute(benchmark::State &state)
 {
     for (auto _ : state)
@@ -141,6 +169,20 @@ static void benchmark_calculate_paths_better(benchmark::State &state)
 }
 BENCHMARK(benchmark_calculate_paths_better);
 
+static void benchmark_calculate_paths_central_binomial_coefficient(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        unsigned long paths{0UL};
+
+        //TODO: wrong calculation, type too short
+        Math::calculate_paths<13U, 13U>(paths);
+
+        //std::cout << "paths: " << paths << "\n";
+    }
+}
+BENCHMARK(benchmark_calculate_paths_central_binomial_coefficient);
+
 BENCHMARK_MAIN();
 
 // int main()
@@ -148,7 +190,7 @@ BENCHMARK_MAIN();
 //     {
 //         unsigned long paths{0UL};
 
-//         auto nodes = Common::build_nodes<13U, 13U>();
+//         auto nodes = Common::build_nodes<10U, 10U>();
 //         Brute::calculate_paths(nodes[0], nodes, paths);
 
 //         std::cout << "(brute force) paths: " << paths << "\n";
@@ -157,10 +199,24 @@ BENCHMARK_MAIN();
 //     {
 //         unsigned long paths{0UL};
 
-//         auto nodes = Common::build_nodes<13U, 13U>();
+//         auto nodes = Common::build_nodes<10U, 10U>();
 //         Better::calculate_paths(nodes, paths);
 
+//         std::cout << "0: " << Math::factorial<0>::m_value << "\n";
+//         std::cout << "1: " << Math::factorial<1>::m_value << "\n";
+//         std::cout << "2: " << Math::factorial<2>::m_value << "\n";
+//         std::cout << "3: " << Math::factorial<3>::m_value << "\n";
+//         std::cout << "4: " << Math::factorial<4>::m_value << "\n";
+
 //         std::cout << "(better) paths: " << paths << "\n";
+//     }
+
+//     {
+//         unsigned long paths{0UL};
+
+//         Math::calculate_paths<10U, 10U>(paths);
+
+//         std::cout << "(math) paths: " << paths << "\n";
 //     }
 
 //     return 0;
