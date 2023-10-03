@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <string_view>
+#include <cassert>
 
 namespace char_literals
 {
@@ -63,7 +65,7 @@ namespace constexpr_features
     constexpr T increment_by_one(const T input)
     {
         // constexpr lambda example
-        auto is_incrementable_lambda = []() constexpr->bool
+        auto is_incrementable_lambda = []() constexpr -> bool
         {
             return std::is_arithmetic_v<T>;
         };
@@ -162,6 +164,15 @@ namespace attributes
     [[nodiscard]] int foo() { return 5; };
 }
 
+namespace string_view
+{
+    void experiment();
+
+    void print1(const std::string& str);
+    void print2(std::string str);
+    void print3(std::string_view str);
+}
+
 int main()
 {
     std::cout << "C++17 features\n";
@@ -189,6 +200,9 @@ int main()
 
     // Attributes
     attributes::experiment(5);
+
+    // String view
+    string_view::experiment();
 
     return EXIT_SUCCESS;
 }
@@ -318,5 +332,38 @@ void attributes::experiment([[maybe_unused]] int i)
     }
 
     // Won't compile: ignoring return value of ‘int attributes::foo()’, declared with attribute ‘nodiscard’
-    //foo();
+    // foo();
+}
+
+void string_view::experiment()
+{
+    std::string_view s1{"Hello string_view!"};
+    std::string s2{"Hello string!"};
+
+    std::string_view s3;
+    assert(s3.data() == nullptr);
+    assert(s3.size() == 0ULL);
+
+    //print1(s1);
+    //print2(s1);
+    print3(s1);
+
+    print1(s2);
+    print2(s2);
+    print3(s2);
+}
+
+void string_view::print1(const std::string& str)
+{
+    std::cout << str << "\n";
+}
+
+void string_view::print2(std::string str)
+{
+    std::cout << str << "\n";
+}
+
+void string_view::print3(std::string_view str)
+{
+    std::cout << str << "\n";
 }
