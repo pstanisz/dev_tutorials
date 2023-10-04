@@ -168,9 +168,11 @@ namespace string_view
 {
     void experiment();
 
-    void print1(const std::string& str);
+    void print1(const std::string &str);
     void print2(std::string str);
     void print3(std::string_view str);
+    void print4(const char str[]);
+    void print5(const uint8_t str[]);
 }
 
 int main()
@@ -344,16 +346,20 @@ void string_view::experiment()
     assert(s3.data() == nullptr);
     assert(s3.size() == 0ULL);
 
-    //print1(s1);
-    //print2(s1);
+    // print1(s1);
+    // print2(s1);
     print3(s1);
+    print4(s1.data());
+    print5(reinterpret_cast<const uint8_t*>(s1.data()));
 
     print1(s2);
     print2(s2);
     print3(s2);
+    print4(s2.data());
+    print5(reinterpret_cast<const uint8_t*>(s2.data()));
 }
 
-void string_view::print1(const std::string& str)
+void string_view::print1(const std::string &str)
 {
     std::cout << str << "\n";
 }
@@ -364,6 +370,16 @@ void string_view::print2(std::string str)
 }
 
 void string_view::print3(std::string_view str)
+{
+    std::cout << str << "\n";
+}
+
+void string_view::print4(const char str[])
+{
+    std::cout << str << "\n";
+}
+
+void string_view::print5(const uint8_t str[])
 {
     std::cout << str << "\n";
 }
