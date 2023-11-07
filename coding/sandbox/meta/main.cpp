@@ -5,6 +5,7 @@
 #include <typeindex>
 #include <array>
 #include <vector>
+#include <span>
 
 template <typename T>
 using small_type = typename std::enable_if_t<(sizeof(T) < 8U)>;
@@ -135,8 +136,8 @@ struct is_iterable : std::false_type
 template <typename T>
 struct is_iterable<T, std::void_t<decltype(std::declval<T &>().begin()),
                                   decltype(std::declval<T &>().end()),
-                                  decltype(std::declval<T &>().cbegin()),
-                                  decltype(std::declval<T &>().cend()),
+                                  //decltype(std::declval<T &>().cbegin()),
+                                  //decltype(std::declval<T &>().cend()),
                                   decltype(std::declval<T &>().size())>> : std::true_type
 {
 };
@@ -145,6 +146,7 @@ struct is_iterable<T, std::void_t<decltype(std::declval<T &>().begin()),
 template <typename T>
 constexpr bool is_iterable_v = is_iterable<T>::value;
 
+// Function template limited to iterable types only
 template <typename T, typename std::enable_if_t<is_iterable_v<T>, bool> = true>
 void print_iterable(const T &iterable)
 {
@@ -154,6 +156,24 @@ void print_iterable(const T &iterable)
     }
     std::cout << "\n";
 }
+
+// Class template limited to iterable types only using static_assert
+template <typename T>
+class Only_iterable_a
+{
+public:
+    static_assert(is_iterable_v<T> == true);
+
+    Only_iterable_a(const T &) { std::cout << "Only_iterable_a with type: " << typeid(T).name() << "\n"; }
+};
+
+// Class template limited to iterable types only using enable_if
+template <typename T,  typename std::enable_if_t<is_iterable_v<T>, bool> = true>
+class Only_iterable_b
+{
+public:
+    Only_iterable_b(const T &) { std::cout << "Only_iterable_b with type: " << typeid(T).name() << "\n"; }
+};
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -224,11 +244,25 @@ int main(int /*argc*/, char * /*argv*/[])
 
     std::array<int, 3> arr = {1, 2, 3};
     std::vector<int> vec = {4, 5, 6, 7};
-    // int carr[] = {8, 9};
+    int carr[] = {8, 9};
+    std::span<int> sp(std::begin(carr), std::end(carr));
     // print_iterable(1);
     print_iterable(arr);
     print_iterable(vec);
-    // print_iterable(carr);
+    //print_iterable(carr);
+    print_iterable(sp);
+
+    //Only_iterable_a a1(1);
+    Only_iterable_a a2(arr);
+    Only_iterable_a a3(vec);
+    //Only_iterable_a a4(carr);
+    Only_iterable_a a5(sp);
+
+    //Only_iterable_b b1(1);
+    Only_iterable_b b2(arr);
+    Only_iterable_b b3(vec);
+    //Only_iterable_b b4(carr);
+    Only_iterable_b b5(sp);
 
     return 0;
 }
