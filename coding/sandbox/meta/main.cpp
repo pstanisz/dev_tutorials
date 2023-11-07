@@ -136,8 +136,8 @@ struct is_iterable : std::false_type
 template <typename T>
 struct is_iterable<T, std::void_t<decltype(std::declval<T &>().begin()),
                                   decltype(std::declval<T &>().end()),
-                                  //decltype(std::declval<T &>().cbegin()),
-                                  //decltype(std::declval<T &>().cend()),
+                                  // decltype(std::declval<T &>().cbegin()),
+                                  // decltype(std::declval<T &>().cend()),
                                   decltype(std::declval<T &>().size())>> : std::true_type
 {
 };
@@ -168,12 +168,34 @@ public:
 };
 
 // Class template limited to iterable types only using enable_if
-template <typename T,  typename std::enable_if_t<is_iterable_v<T>, bool> = true>
+template <typename T, typename std::enable_if_t<is_iterable_v<T>, bool> = true>
 class Only_iterable_b
 {
 public:
     Only_iterable_b(const T &) { std::cout << "Only_iterable_b with type: " << typeid(T).name() << "\n"; }
 };
+
+// convertible_to implemented with concepts
+template <class FromT, class ToT>
+concept convertible_to =
+    std::is_convertible_v<FromT, ToT> &&
+    requires {
+        static_cast<ToT>(std::declval<FromT>());
+    };
+
+// convertible_to implemented with SFINAE
+template <class FromT, class ToT, typename = void>
+struct is_convertible_to : std::false_type
+{
+};
+
+template <class FromT, class ToT>
+struct is_convertible_to<FromT, ToT, std::void_t<decltype(std::is_convertible_v<FromT, ToT>), decltype(static_cast<ToT>(std::declval<FromT>()))>> : std::true_type
+{
+};
+
+template <class FromT, class ToT>
+constexpr bool is_convertible_to_v = is_convertible_to<FromT, ToT>::value;
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -249,20 +271,32 @@ int main(int /*argc*/, char * /*argv*/[])
     // print_iterable(1);
     print_iterable(arr);
     print_iterable(vec);
-    //print_iterable(carr);
+    // print_iterable(carr);
     print_iterable(sp);
 
-    //Only_iterable_a a1(1);
+    // Only_iterable_a a1(1);
     Only_iterable_a a2(arr);
     Only_iterable_a a3(vec);
-    //Only_iterable_a a4(carr);
+    // Only_iterable_a a4(carr);
     Only_iterable_a a5(sp);
 
-    //Only_iterable_b b1(1);
+    // Only_iterable_b b1(1);
     Only_iterable_b b2(arr);
     Only_iterable_b b3(vec);
-    //Only_iterable_b b4(carr);
+    // Only_iterable_b b4(carr);
     Only_iterable_b b5(sp);
+
+    // With concepts
+    std::cout << convertible_to<int, int> << "\n";
+    std::cout << convertible_to<int, double> << "\n";
+    std::cout << convertible_to<std::string, std::string_view> << "\n";
+    std::cout << convertible_to<int, std::string_view> << "\n";
+
+    // Old-school
+    std::cout << is_convertible_to_v<int, int> << "\n";
+    std::cout << is_convertible_to_v<int, double> << "\n";
+    std::cout << is_convertible_to_v<std::string, std::string_view> << "\n";
+    std::cout << is_convertible_to_v<int, std::string_view> << "\n";
 
     return 0;
 }
