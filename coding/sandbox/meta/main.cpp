@@ -3,6 +3,8 @@
 #include <iostream>
 #include <type_traits>
 #include <typeindex>
+#include <array>
+#include <vector>
 
 template <typename T>
 using small_type = typename std::enable_if_t<(sizeof(T) < 8U)>;
@@ -48,7 +50,7 @@ struct Big
 };
 
 template <typename T>
-using streamable = typename std::enable_if_t<sizeof(std::declval<std::ostream &>() << std::declval<Small &>()) != 0>;
+using streamable = typename std::enable_if_t<sizeof(std::declval<std::ostream &>() << std::declval<T &>()) != 0>;
 
 std::ostream &operator<<(std::ostream &os, const Small &s)
 {
@@ -87,7 +89,7 @@ void print_number_c(T number)
 
 // Function template - limited to integral types by requires
 template <typename T>
-requires std::is_integral_v<T>
+    requires std::is_integral_v<T>
 void print_number_d(T number)
 {
     std::cout << number << "\n";
@@ -101,6 +103,56 @@ template <Floating_point T>
 void print_number_e(T number)
 {
     std::cout << number << "\n";
+}
+
+// Function template - no limitation
+template <typename T>
+T doubled_a(T input)
+{
+    return input + input;
+}
+
+// Function template - limited to arithmetic types by enable_of
+template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
+T doubled_b(T input)
+{
+    return input + input;
+}
+
+// Function template - limited to arithmetic types by enable_if in return type
+template <typename T>
+auto doubled_c(T input) -> typename std::enable_if_t<std::is_arithmetic_v<T>, T>
+{
+    return input + input;
+}
+
+template <typename T, typename = void>
+struct is_iterable : std::false_type
+{
+};
+
+// Checks whether type is iterable
+template <typename T>
+struct is_iterable<T, std::void_t<decltype(std::declval<T &>().begin()),
+                                  decltype(std::declval<T &>().end()),
+                                  decltype(std::declval<T &>().cbegin()),
+                                  decltype(std::declval<T &>().cend()),
+                                  decltype(std::declval<T &>().size())>> : std::true_type
+{
+};
+
+// Helper for checking iterable type
+template <typename T>
+constexpr bool is_iterable_v = is_iterable<T>::value;
+
+template <typename T, typename std::enable_if_t<is_iterable_v<T>, bool> = true>
+void print_iterable(const T &iterable)
+{
+    for (const auto &item : iterable)
+    {
+        std::cout << item << ", ";
+    }
+    std::cout << "\n";
 }
 
 int main(int /*argc*/, char * /*argv*/[])
@@ -157,6 +209,26 @@ int main(int /*argc*/, char * /*argv*/[])
     // print_number_e(2UL);
     print_number_e(3.0);
     print_number_e(4.5f);
+
+    std::cout << doubled_a(1) << "\n";
+    std::cout << doubled_a(2.0f) << "\n";
+    // std::cout << doubled_a("text") << "\n";
+
+    std::cout << doubled_b(1) << "\n";
+    std::cout << doubled_b(2.0f) << "\n";
+    // std::cout << doubled_b("text") << "\n";
+
+    std::cout << doubled_c(1) << "\n";
+    std::cout << doubled_c(2.0f) << "\n";
+    // std::cout << doubled_c("text") << "\n";
+
+    std::array<int, 3> arr = {1, 2, 3};
+    std::vector<int> vec = {4, 5, 6, 7};
+    // int carr[] = {8, 9};
+    // print_iterable(1);
+    print_iterable(arr);
+    print_iterable(vec);
+    // print_iterable(carr);
 
     return 0;
 }
