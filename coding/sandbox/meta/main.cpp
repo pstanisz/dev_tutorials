@@ -42,6 +42,12 @@ struct Small
     friend std::ostream &operator<<(std::ostream &os, const Small &s);
 };
 
+// To check is_equality_comparable OK
+bool operator==(const Small &, const Small &)
+{
+    return true;
+}
+
 struct Big
 {
     uint32_t m_x;
@@ -49,6 +55,12 @@ struct Big
 
     // friend std::ostream& operator<<(std::ostream& os, const Big& dt);
 };
+
+// To check is_equality_comparable NOK
+std::string operator==(const Big &, const Big &)
+{
+    return "abc";
+}
 
 template <typename T>
 using streamable = typename std::enable_if_t<sizeof(std::declval<std::ostream &>() << std::declval<T &>()) != 0>;
@@ -197,6 +209,28 @@ struct is_convertible_to<FromT, ToT, std::void_t<decltype(std::is_convertible_v<
 template <class FromT, class ToT>
 constexpr bool is_convertible_to_v = is_convertible_to<FromT, ToT>::value;
 
+template <typename T>
+concept equality_comparable = requires(const std::remove_reference_t<T> &a, const std::remove_reference_t<T> b) {
+    {
+        a == b
+    } -> convertible_to<bool>;
+};
+
+// equality_comparable implemented with SFINAE
+template <class T, typename = void>
+struct is_equality_comparable : std::false_type
+{
+};
+
+template <class T>
+struct is_equality_comparable<T, std::enable_if_t<
+    is_convertible_to_v<decltype(std::declval<const std::remove_reference_t<T> &>() == std::declval<const std::remove_reference_t<T>>()), bool>>> : std::true_type
+{
+};
+
+template <class T>
+constexpr bool is_equality_comparable_v = is_equality_comparable<T>::value;
+
 int main(int /*argc*/, char * /*argv*/[])
 {
     std::cout << "meta" << std::endl;
@@ -287,16 +321,56 @@ int main(int /*argc*/, char * /*argv*/[])
     Only_iterable_b b5(sp);
 
     // With concepts
-    std::cout << convertible_to<int, int> << "\n";
-    std::cout << convertible_to<int, double> << "\n";
-    std::cout << convertible_to<std::string, std::string_view> << "\n";
-    std::cout << convertible_to<int, std::string_view> << "\n";
+    std::cout << "convertible_to with concepts\n";
+    std::cout << convertible_to<int, int>;
+    std::cout << convertible_to<int, double>;
+    std::cout << convertible_to<std::string, std::string_view>;
+    std::cout << convertible_to<int, std::string_view>;
+    std::cout << convertible_to<std::string, bool>;
+    std::cout << convertible_to<decltype(small == small), bool>;
+    std::cout << convertible_to<decltype(big == big), bool> << "\n";
 
     // Old-school
-    std::cout << is_convertible_to_v<int, int> << "\n";
-    std::cout << is_convertible_to_v<int, double> << "\n";
-    std::cout << is_convertible_to_v<std::string, std::string_view> << "\n";
-    std::cout << is_convertible_to_v<int, std::string_view> << "\n";
+    std::cout << "is_convertible_to_v old-school\n";
+    std::cout << is_convertible_to_v<int, int>;
+    std::cout << is_convertible_to_v<int, double>;
+    std::cout << is_convertible_to_v<std::string, std::string_view>;
+    std::cout << is_convertible_to_v<int, std::string_view>;
+    std::cout << is_convertible_to_v<std::string, bool>;
+    std::cout << is_convertible_to_v<decltype(small == small), bool>;
+    std::cout << is_convertible_to_v<decltype(big == big), bool> << "\n";
+
+    // Test
+    static_assert(convertible_to<int, int> == is_convertible_to_v<int, int>, "NOK");
+    static_assert(convertible_to<int, double> == is_convertible_to_v<int, double>, "NOK");
+    static_assert(convertible_to<std::string, std::string_view> == is_convertible_to_v<std::string, std::string_view>, "NOK");
+    static_assert(convertible_to<int, std::string_view> == is_convertible_to_v<int, std::string_view>, "NOK");
+    static_assert(convertible_to<std::string, bool> == is_convertible_to_v<std::string, bool>, "NOK");
+    static_assert(convertible_to<decltype(small == small), bool> == is_convertible_to_v<decltype(small == small), bool>, "NOK");
+    static_assert(convertible_to<decltype(big == big), bool> == is_convertible_to_v<decltype(big == big), bool>, "NOK");
+
+    // With concepts
+    std::cout << "equality_comparable with concepts\n";
+    std::cout << equality_comparable<int>;
+    std::cout << equality_comparable<float>;
+    std::cout << equality_comparable<std::string>;
+    std::cout << equality_comparable<Small>;
+    std::cout << equality_comparable<Big> << "\n";
+
+    // Old-school
+    std::cout << "is_equality_comparable_v old-school\n";
+    std::cout << is_equality_comparable_v<int>;
+    std::cout << is_equality_comparable_v<float>;
+    std::cout << is_equality_comparable_v<std::string>;
+    std::cout << is_equality_comparable_v<Small>;
+    std::cout << is_equality_comparable_v<Big> << "\n";
+
+    // Test
+    static_assert(equality_comparable<int> == is_equality_comparable_v<int>, "NOK");
+    static_assert(equality_comparable<float> == is_equality_comparable_v<double>, "NOK");
+    static_assert(equality_comparable<std::string> == is_equality_comparable_v<std::string>, "NOK");
+    static_assert(equality_comparable<Small> == is_equality_comparable_v<Small>, "NOK");
+    static_assert(equality_comparable<Big> == is_equality_comparable_v<Big>, "NOK");
 
     return 0;
 }
