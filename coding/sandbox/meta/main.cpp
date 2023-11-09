@@ -39,6 +39,8 @@ struct Small
     uint8_t m_x;
     uint8_t m_y;
 
+    void foo();
+
     friend std::ostream &operator<<(std::ostream &os, const Small &s);
 };
 
@@ -71,6 +73,11 @@ std::ostream &operator<<(std::ostream &os, const Small &s)
 
     return os;
 }
+
+struct No_default_ctor
+{
+    No_default_ctor(int) {}
+};
 
 template <typename T, typename = streamable<T>>
 void print_if_streamable(T t)
@@ -237,17 +244,35 @@ concept destructible = std::is_nothrow_destructible_v<T>;
 
 // is_destructible implemented with SFINAE
 template <class T>
-constexpr bool is_destructible_v = std::is_nothrow_constructible<T>::value;
+constexpr bool is_destructible_v = std::is_nothrow_destructible<T>::value;
 
 template <class T, class... Args>
 concept constructible_from =
     destructible<T> && std::is_constructible_v<T, Args...>;
+
+// is_constructible_from implemented with SFINAE
+template <class T, class... Args>
+constexpr bool is_constructible_from_v = is_destructible_v<T> && std::is_constructible_v<T, Args...>;
 
 template <class T>
 concept default_initializable =
     constructible_from<T> &&
     requires { T{}; } &&
     requires { ::new (static_cast<void *>(nullptr)) T; };
+
+// is_default_initializable implemented with SFINAE
+template <class T, typename = void>
+struct is_default_initializable : std::false_type
+{
+};
+
+template <class T>
+struct is_default_initializable<T, std::void_t<std::enable_if_t<is_constructible_from_v<T>>, decltype(T{}), decltype(::new (static_cast<void *>(nullptr)) T)>> : std::true_type
+{
+};
+
+template <class T>
+constexpr bool is_default_initializable_v = is_default_initializable<T>::value;
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -412,6 +437,55 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(destructible<std::string> == is_destructible_v<std::string>, "NOK");
     static_assert(destructible<Small> == is_destructible_v<Small>, "NOK");
     static_assert(destructible<Big> == is_destructible_v<Big>, "NOK");
+
+    // With concepts
+    std::cout << "constructible_from with concepts\n";
+    std::cout << constructible_from<int, int>;
+    std::cout << constructible_from<float, int>;
+    std::cout << constructible_from<std::string, std::string_view>;
+    std::cout << constructible_from<Small, Small>;
+    std::cout << constructible_from<Big, Small> << "\n";
+
+    // Old-school
+    std::cout << "is_constructible_from_v old-school\n";
+    std::cout << is_constructible_from_v<int, int>;
+    std::cout << is_constructible_from_v<float, int>;
+    std::cout << is_constructible_from_v<std::string, std::string_view>;
+    std::cout << is_constructible_from_v<Small, Small>;
+    std::cout << is_constructible_from_v<Big, Small> << "\n";
+
+    // Test
+    static_assert(constructible_from<int, int> == is_constructible_from_v<int, int>, "NOK");
+    static_assert(constructible_from<float, int> == is_constructible_from_v<float, int>, "NOK");
+    static_assert(constructible_from<std::string, std::string_view> == is_constructible_from_v<std::string, std::string_view>, "NOK");
+    static_assert(constructible_from<Small, Small> == is_constructible_from_v<Small, Small>, "NOK");
+    static_assert(constructible_from<Big, Small> == is_constructible_from_v<Big, Small>, "NOK");
+
+    // With concepts
+    std::cout << "default_initializable with concepts\n";
+    std::cout << default_initializable<int>;
+    std::cout << default_initializable<float>;
+    std::cout << default_initializable<std::string>;
+    std::cout << default_initializable<Small>;
+    std::cout << default_initializable<Big>;
+    std::cout << default_initializable<No_default_ctor> << "\n";
+
+    // Old-school
+    std::cout << "is_default_initializable_v old-school\n";
+    std::cout << is_default_initializable_v<int>;
+    std::cout << is_default_initializable_v<float>;
+    std::cout << is_default_initializable_v<std::string>;
+    std::cout << is_default_initializable_v<Small>;
+    std::cout << is_default_initializable_v<Big>;
+    std::cout << is_default_initializable_v<No_default_ctor> << "\n";
+
+    // Test
+    static_assert(default_initializable<int> == is_default_initializable_v<int>, "NOK");
+    static_assert(default_initializable<float> == is_default_initializable_v<float>, "NOK");
+    static_assert(default_initializable<std::string> == is_default_initializable_v<std::string>, "NOK");
+    static_assert(default_initializable<Small> == is_default_initializable_v<Small>, "NOK");
+    static_assert(default_initializable<Big> == is_default_initializable_v<Big>, "NOK");
+    static_assert(default_initializable<No_default_ctor> == is_default_initializable_v<No_default_ctor>, "NOK");
 
     return 0;
 }
