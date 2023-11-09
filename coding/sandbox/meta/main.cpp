@@ -224,12 +224,30 @@ struct is_equality_comparable : std::false_type
 
 template <class T>
 struct is_equality_comparable<T, std::enable_if_t<
-    is_convertible_to_v<decltype(std::declval<const std::remove_reference_t<T> &>() == std::declval<const std::remove_reference_t<T>>()), bool>>> : std::true_type
+                                     is_convertible_to_v<decltype(std::declval<const std::remove_reference_t<T> &>() == std::declval<const std::remove_reference_t<T>>()), bool>>> : std::true_type
 {
 };
 
 template <class T>
 constexpr bool is_equality_comparable_v = is_equality_comparable<T>::value;
+
+// Destructible concept
+template <class T>
+concept destructible = std::is_nothrow_destructible_v<T>;
+
+// is_destructible implemented with SFINAE
+template <class T>
+constexpr bool is_destructible_v = std::is_nothrow_constructible<T>::value;
+
+template <class T, class... Args>
+concept constructible_from =
+    destructible<T> && std::is_constructible_v<T, Args...>;
+
+template <class T>
+concept default_initializable =
+    constructible_from<T> &&
+    requires { T{}; } &&
+    requires { ::new (static_cast<void *>(nullptr)) T; };
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -371,6 +389,29 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(equality_comparable<std::string> == is_equality_comparable_v<std::string>, "NOK");
     static_assert(equality_comparable<Small> == is_equality_comparable_v<Small>, "NOK");
     static_assert(equality_comparable<Big> == is_equality_comparable_v<Big>, "NOK");
+
+    // With concepts
+    std::cout << "destructible with concepts\n";
+    std::cout << destructible<int>;
+    std::cout << destructible<float>;
+    std::cout << destructible<std::string>;
+    std::cout << destructible<Small>;
+    std::cout << destructible<Big> << "\n";
+
+    // Old-school
+    std::cout << "is_nothrow_destructible_v old-school\n";
+    std::cout << is_destructible_v<int>;
+    std::cout << is_destructible_v<float>;
+    std::cout << is_destructible_v<std::string>;
+    std::cout << is_destructible_v<Small>;
+    std::cout << is_destructible_v<Big> << "\n";
+
+    // Test
+    static_assert(destructible<int> == is_destructible_v<int>, "NOK");
+    static_assert(destructible<float> == is_destructible_v<double>, "NOK");
+    static_assert(destructible<std::string> == is_destructible_v<std::string>, "NOK");
+    static_assert(destructible<Small> == is_destructible_v<Small>, "NOK");
+    static_assert(destructible<Big> == is_destructible_v<Big>, "NOK");
 
     return 0;
 }
