@@ -313,6 +313,19 @@ concept container_pointer =
     std::same_as<PtrT, typename ContainerT::pointer> ||
     std::same_as<PtrT, typename ContainerT::const_pointer>;
 
+template <typename PtrT, typename ContainerT, typename = void>
+struct is_container_pointer : std::false_type
+{
+};
+
+template <typename PtrT, typename ContainerT>
+struct is_container_pointer<PtrT, ContainerT, std::enable_if_t<is_same_as_v<PtrT, typename ContainerT::pointer> || is_same_as_v<PtrT, typename ContainerT::const_pointer>>> : std::true_type
+{
+};
+
+template <typename PtrT, typename ContainerT>
+constexpr bool is_container_pointer_v = is_container_pointer<PtrT, ContainerT>::value;
+
 int main(int /*argc*/, char * /*argv*/[])
 {
     std::cout << "meta" << std::endl;
@@ -541,6 +554,7 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(std::same_as<long, int> == is_same_as_v<long, int>, "NOK");
     static_assert(std::same_as<Small, Big> == is_same_as_v<Small, Big>, "NOK");
     static_assert(std::same_as<Big, Big> == is_same_as_v<Big, Big>, "NOK");
+    static_assert(std::same_as<std::span<float>::iterator, std::span<float>::iterator> == is_same_as_v<std::span<float>::iterator, std::span<float>::iterator>, "NOK");
 
     // With concepts
     std::cout << "container_iterator with concepts\n";
@@ -563,6 +577,16 @@ int main(int /*argc*/, char * /*argv*/[])
     std::cout << is_container_iterator_v<std::map<int, std::string>::iterator, std::map<int, std::string>>;
     std::cout << is_container_iterator_v<std::span<int>::iterator, std::span<float>>;
     std::cout << is_container_iterator_v<std::span<float>::iterator, std::span<float>> << "\n"; // TODO: why false?
+
+    // Test
+    static_assert(container_iterator<int, std::vector<int>> == is_container_iterator_v<int, std::vector<int>>, "NOK");
+    static_assert(container_iterator<std::vector<int>::iterator, std::vector<int>> == is_container_iterator_v<std::vector<int>::iterator, std::vector<int>>, "NOK");
+    static_assert(container_iterator<std::vector<int>::const_iterator, std::array<int, 3>> == is_container_iterator_v<std::vector<int>::const_iterator, std::array<int, 3>>, "NOK");
+    static_assert(container_iterator<std::vector<int>::const_iterator, std::vector<int>> == is_container_iterator_v<std::vector<int>::const_iterator, std::vector<int>>, "NOK");
+    static_assert(container_iterator<std::map<int, std::string>::iterator, std::vector<int>> == is_container_iterator_v<std::map<int, std::string>::iterator, std::vector<int>>, "NOK");
+    static_assert(container_iterator<std::map<int, std::string>::iterator, std::map<int, std::string>> == is_container_iterator_v<std::map<int, std::string>::iterator, std::map<int, std::string>>, "NOK");
+    static_assert(container_iterator<std::span<int>::iterator, std::span<float>> == is_container_iterator_v<std::span<int>::iterator, std::span<float>>, "NOK");
+    // static_assert(container_iterator<std::span<float>::iterator, std::span<float>> == is_container_iterator_v<std::span<float>::iterator, std::span<float>>, "NOK");
 
     return 0;
 }
