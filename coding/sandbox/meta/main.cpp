@@ -5,6 +5,7 @@
 #include <typeindex>
 #include <array>
 #include <vector>
+#include <map>
 #include <span>
 
 template <typename T>
@@ -274,6 +275,44 @@ struct is_default_initializable<T, std::void_t<std::enable_if_t<is_constructible
 template <class T>
 constexpr bool is_default_initializable_v = is_default_initializable<T>::value;
 
+// concepts
+template <typename IterT, typename ContainerT>
+concept container_iterator =
+    std::same_as<IterT, typename ContainerT::iterator> ||
+    std::same_as<IterT, typename ContainerT::const_iterator>;
+
+// old-school
+template <typename T, typename U, typename = void>
+struct is_same_as : std::false_type
+{
+};
+
+template <typename T, typename U>
+struct is_same_as<T, U, std::enable_if_t<std::is_same_v<T, U> && std::is_same_v<U, T>>> : std::true_type
+{
+};
+
+template <typename T, typename U>
+constexpr bool is_same_as_v = is_same_as<T, U>::value;
+
+// template <typename IterT, typename ContainerT, typename = void>
+// struct is_container_iterator : std::false_type
+// {
+// };
+
+// template <typename IterT, typename ContainerT>
+// struct is_container_iterator<IterT, ContainerT, std::void_t<std::enable_if_t<is_constructible_from_v<T>>, decltype(T{}), decltype(::new (static_cast<void *>(nullptr)) T)>> : std::true_type
+// {
+// };
+
+// template <class T>
+// constexpr bool is_container_iterator_v = is_container_iterator<T>::value;
+
+template <typename PtrT, typename ContainerT>
+concept container_pointer =
+    std::same_as<PtrT, typename ContainerT::pointer> ||
+    std::same_as<PtrT, typename ContainerT::const_pointer>;
+
 int main(int /*argc*/, char * /*argv*/[])
 {
     std::cout << "meta" << std::endl;
@@ -486,6 +525,32 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(default_initializable<Small> == is_default_initializable_v<Small>, "NOK");
     static_assert(default_initializable<Big> == is_default_initializable_v<Big>, "NOK");
     static_assert(default_initializable<No_default_ctor> == is_default_initializable_v<No_default_ctor>, "NOK");
+
+    // Old-school
+    std::cout << "is_same_as_v check\n";
+    std::cout << is_same_as_v<int, int>;
+    std::cout << is_same_as_v<float, int>;
+    std::cout << is_same_as_v<long, int>;
+    std::cout << is_same_as_v<Small, Big>;
+    std::cout << is_same_as_v<Big, Big> << "\n";
+
+    // Test
+    static_assert(std::same_as<int, int> == is_same_as_v<int, int>, "NOK");
+    static_assert(std::same_as<float, int> == is_same_as_v<float, int>, "NOK");
+    static_assert(std::same_as<long, int> == is_same_as_v<long, int>, "NOK");
+    static_assert(std::same_as<Small, Big> == is_same_as_v<Small, Big>, "NOK");
+    static_assert(std::same_as<Big, Big> == is_same_as_v<Big, Big>, "NOK");
+
+    // With concepts
+    std::cout << "container_iterator with concepts\n";
+    std::cout << container_iterator<int, std::vector<int>>;
+    std::cout << container_iterator<std::vector<int>::iterator, std::vector<int>>;
+    std::cout << container_iterator<std::vector<int>::const_iterator, std::array<int, 3>>;
+    std::cout << container_iterator<std::vector<int>::const_iterator, std::vector<int>>;
+    std::cout << container_iterator<std::map<int, std::string>::iterator, std::vector<int>>;
+    std::cout << container_iterator<std::map<int, std::string>::iterator, std::map<int, std::string>>;
+    std::cout << container_iterator<std::span<int>::iterator, std::span<float>>;
+    std::cout << container_iterator<std::span<float>::iterator, std::span<float>> << "\n";
 
     return 0;
 }
