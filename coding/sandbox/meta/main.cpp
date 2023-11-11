@@ -295,18 +295,18 @@ struct is_same_as<T, U, std::enable_if_t<std::is_same_v<T, U> && std::is_same_v<
 template <typename T, typename U>
 constexpr bool is_same_as_v = is_same_as<T, U>::value;
 
-// template <typename IterT, typename ContainerT, typename = void>
-// struct is_container_iterator : std::false_type
-// {
-// };
+template <typename IterT, typename ContainerT, typename = void>
+struct is_container_iterator : std::false_type
+{
+};
 
-// template <typename IterT, typename ContainerT>
-// struct is_container_iterator<IterT, ContainerT, std::void_t<std::enable_if_t<is_constructible_from_v<T>>, decltype(T{}), decltype(::new (static_cast<void *>(nullptr)) T)>> : std::true_type
-// {
-// };
+template <typename IterT, typename ContainerT>
+struct is_container_iterator<IterT, ContainerT, std::enable_if_t<is_same_as_v<IterT, typename ContainerT::iterator> || is_same_as_v<IterT, typename ContainerT::const_iterator>>> : std::true_type
+{
+};
 
-// template <class T>
-// constexpr bool is_container_iterator_v = is_container_iterator<T>::value;
+template <typename IterT, typename ContainerT>
+constexpr bool is_container_iterator_v = is_container_iterator<IterT, ContainerT>::value;
 
 template <typename PtrT, typename ContainerT>
 concept container_pointer =
@@ -532,7 +532,8 @@ int main(int /*argc*/, char * /*argv*/[])
     std::cout << is_same_as_v<float, int>;
     std::cout << is_same_as_v<long, int>;
     std::cout << is_same_as_v<Small, Big>;
-    std::cout << is_same_as_v<Big, Big> << "\n";
+    std::cout << is_same_as_v<Big, Big>;
+    std::cout << is_same_as_v<std::vector<int>::iterator, std::vector<int>::iterator> << "\n";
 
     // Test
     static_assert(std::same_as<int, int> == is_same_as_v<int, int>, "NOK");
@@ -551,6 +552,17 @@ int main(int /*argc*/, char * /*argv*/[])
     std::cout << container_iterator<std::map<int, std::string>::iterator, std::map<int, std::string>>;
     std::cout << container_iterator<std::span<int>::iterator, std::span<float>>;
     std::cout << container_iterator<std::span<float>::iterator, std::span<float>> << "\n";
+
+    // Old-school
+    std::cout << "is_container_iterator_v old-school\n";
+    std::cout << is_container_iterator_v<int, std::vector<int>>;
+    std::cout << is_container_iterator_v<std::vector<int>::iterator, std::vector<int>>;
+    std::cout << is_container_iterator_v<std::vector<int>::const_iterator, std::array<int, 3>>;
+    std::cout << is_container_iterator_v<std::vector<int>::const_iterator, std::vector<int>>;
+    std::cout << is_container_iterator_v<std::map<int, std::string>::iterator, std::vector<int>>;
+    std::cout << is_container_iterator_v<std::map<int, std::string>::iterator, std::map<int, std::string>>;
+    std::cout << is_container_iterator_v<std::span<int>::iterator, std::span<float>>;
+    std::cout << is_container_iterator_v<std::span<float>::iterator, std::span<float>> << "\n"; // TODO: why false?
 
     return 0;
 }
