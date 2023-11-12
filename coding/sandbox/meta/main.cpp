@@ -588,5 +588,28 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(container_iterator<std::span<int>::iterator, std::span<float>> == is_container_iterator_v<std::span<int>::iterator, std::span<float>>, "NOK");
     // static_assert(container_iterator<std::span<float>::iterator, std::span<float>> == is_container_iterator_v<std::span<float>::iterator, std::span<float>>, "NOK");
 
+    // With concepts
+    std::cout << "container_pointer with concepts\n";
+    std::cout << container_pointer<int *, float>;
+    std::cout << container_pointer<int *, std::vector<int>>;
+    std::cout << container_pointer<const int *, std::vector<int>>;
+    std::cout << container_pointer<const std::pair<int, std::string> *, std::map<int, std::string>>;
+    std::cout << container_pointer<const std::pair<const int, std::string> *, std::map<int, std::string>> << "\n";
+
+    // Old-school
+    std::cout << "is_container_pointer_v old-school\n";
+    std::cout << is_container_pointer_v<int *, float>;
+    std::cout << is_container_pointer_v<int *, std::vector<int>>;
+    std::cout << is_container_pointer_v<const int *, std::vector<int>>;
+    std::cout << is_container_pointer_v<const std::pair<int, std::string> *, std::map<int, std::string>>;
+    std::cout << is_container_pointer_v<const std::pair<const int, std::string> *, std::map<int, std::string>> << "\n";
+
+    // Test
+    static_assert(container_pointer<int *, float> == is_container_pointer_v<int *, float>, "NOK");
+    static_assert(container_pointer<int *, std::vector<int>> == is_container_pointer_v<int *, std::vector<int>>, "NOK");
+    static_assert(container_pointer<const int *, std::vector<int>> == is_container_pointer_v<const int *, std::vector<int>>, "NOK");
+    static_assert(container_pointer<const std::pair<int, std::string> *, std::map<int, std::string>> == is_container_pointer_v<const std::pair<int, std::string> *, std::map<int, std::string>>, "NOK");
+    static_assert(container_pointer<const std::pair<const int, std::string> *, std::map<int, std::string>> == is_container_pointer_v<const std::pair<const int, std::string> *, std::map<int, std::string>>, "NOK");
+
     return 0;
 }
