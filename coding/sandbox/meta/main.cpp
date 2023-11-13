@@ -467,6 +467,31 @@ struct is_resizable_container<T, std::void_t<std::enable_if_t<is_container_v<T>>
 template <typename T>
 constexpr bool is_resizable_container_v = is_resizable_container<T>::value;
 
+template <typename T>
+concept resizable_byte_buffer =
+    contiguous_container<T> &&
+    resizable_container<T> &&
+    std::same_as<typename T::value_type, uint8_t>;
+
+template <typename T>
+using Resizable_byte_buffer = typename std::enable_if_t<is_contiguous_container_v<T> &&
+                                                        is_resizable_container_v<T> &&
+                                                        is_same_as_v<typename T::value_type, uint8_t>>;
+
+template <typename T, typename = void>
+struct is_resizable_byte_buffer : std::false_type
+{
+};
+
+template <typename T>
+struct is_resizable_byte_buffer<T, Resizable_byte_buffer<T>> : std::true_type
+{
+};
+
+// Helper for checking resizable_container type
+template <typename T>
+constexpr bool is_resizable_byte_buffer_v = is_resizable_byte_buffer<T>::value;
+
 int main(int /*argc*/, char * /*argv*/[])
 {
     std::cout << "meta" << std::endl;
@@ -858,6 +883,29 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(resizable_container<std::vector<int>> == is_resizable_container_v<std::vector<int>>, "NOK");
     static_assert(resizable_container<Big> == is_resizable_container_v<Big>, "NOK");
     static_assert(resizable_container<Continuous_container<int>> == is_resizable_container_v<Continuous_container<int>>, "NOK");
+
+    // With concepts
+    std::cout << "resizable_byte_buffer with concepts\n";
+    std::cout << resizable_byte_buffer<int>;
+    std::cout << resizable_byte_buffer<std::string>;
+    std::cout << resizable_byte_buffer<std::vector<int>>;
+    std::cout << resizable_byte_buffer<std::vector<uint8_t>>;
+    std::cout << resizable_byte_buffer<Continuous_container<uint8_t>> << "\n";
+
+    // Old-school
+    std::cout << "is_resizable_byte_buffer_v old-school\n";
+    std::cout << is_resizable_byte_buffer_v<int>;
+    std::cout << is_resizable_byte_buffer_v<std::string>;
+    std::cout << is_resizable_byte_buffer_v<std::vector<int>>;
+    std::cout << is_resizable_byte_buffer_v<std::vector<uint8_t>>;
+    std::cout << is_resizable_byte_buffer_v<Continuous_container<uint8_t>> << "\n";
+
+    // Test
+    static_assert(resizable_byte_buffer<int> == is_resizable_byte_buffer_v<int>, "NOK");
+    static_assert(resizable_byte_buffer<std::string> == is_resizable_byte_buffer_v<std::string>, "NOK");
+    static_assert(resizable_byte_buffer<std::vector<int>> == is_resizable_byte_buffer_v<std::vector<int>>, "NOK");
+    static_assert(resizable_byte_buffer<std::vector<uint8_t>> == is_resizable_byte_buffer_v<std::vector<uint8_t>>, "NOK");
+    static_assert(resizable_byte_buffer<Continuous_container<uint8_t>> == is_resizable_byte_buffer_v<Continuous_container<uint8_t>>, "NOK");
 
     return 0;
 }
