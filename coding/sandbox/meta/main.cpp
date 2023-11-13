@@ -326,12 +326,15 @@ struct is_container_pointer<PtrT, ContainerT, std::enable_if_t<is_same_as_v<PtrT
 template <typename PtrT, typename ContainerT>
 constexpr bool is_container_pointer_v = is_container_pointer<PtrT, ContainerT>::value;
 
-template<typename T>
-class Dummy_container {
+template <typename T>
+class Dummy_container
+{
 public:
     using value_type = T;
-    using iterator = T*;
-    using const_iterator = const T*;
+    using iterator = T *;
+    using const_iterator = const T *;
+    using pointer = T *;
+    using const_pointer = const T *;
     using size_type = size_t;
 
     iterator begin() { return &m_value; }
@@ -344,6 +347,13 @@ public:
 
 private:
     T m_value;
+};
+
+template <typename T>
+class Continuous_container : public Dummy_container<T>
+{
+public:
+    Dummy_container<T>::const_pointer data() { return nullptr; }
 };
 
 template <typename T>
@@ -371,7 +381,6 @@ struct is_container : std::false_type
 {
 };
 
-// Checks whether type is a container
 template <typename T>
 struct is_container<T, std::enable_if_t<is_container_iterator_v<decltype(std::declval<T &>().begin()), T> &&
                                         is_container_iterator_v<decltype(std::declval<T &>().end()), T> &&
@@ -385,6 +394,30 @@ struct is_container<T, std::enable_if_t<is_container_iterator_v<decltype(std::de
 // Helper for checking iterable type
 template <typename T>
 constexpr bool is_container_v = is_container<T>::value;
+
+template <typename T>
+concept contiguous_container =
+    container<T> &&
+    requires(T a) {
+        {
+            a.data()
+        } -> container_pointer<T>;
+    };
+
+template <typename T, typename = void>
+struct is_contiguous_container : std::false_type
+{
+};
+
+template <typename T>
+struct is_contiguous_container<T, std::enable_if_t<is_container_v<T> &&
+                                                   is_container_pointer_v<decltype(std::declval<T &>().data()), T>>> : std::true_type
+{
+};
+
+// Helper for checking iterable type
+template <typename T>
+constexpr bool is_contiguous_container_v = is_contiguous_container<T>::value;
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -699,6 +732,38 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(container<std::vector<float>> == is_container_v<std::vector<float>>, "NOK");
     static_assert(container<std::map<int, std::string>> == is_container_v<std::map<int, std::string>>, "NOK");
     static_assert(container<Dummy_container<int>> == is_container_v<Dummy_container<int>>, "NOK");
+
+    // With concepts
+    std::cout << "contiguous_container with concepts\n";
+    std::cout << contiguous_container<int>;
+    std::cout << contiguous_container<int[4]>;
+    std::cout << contiguous_container<std::string>;
+    std::cout << contiguous_container<std::array<int, 3>>;
+    std::cout << contiguous_container<std::vector<float>>;
+    std::cout << contiguous_container<std::map<int, std::string>>;
+    std::cout << contiguous_container<Dummy_container<int>>;
+    std::cout << contiguous_container<Continuous_container<float>> << "\n";
+
+    // Old-school
+    std::cout << "is_contiguous_container_v old-school\n";
+    std::cout << is_contiguous_container_v<int>;
+    std::cout << is_contiguous_container_v<int[4]>;
+    std::cout << is_contiguous_container_v<std::string>;
+    std::cout << is_contiguous_container_v<std::array<int, 3>>;
+    std::cout << is_contiguous_container_v<std::vector<float>>;
+    std::cout << is_contiguous_container_v<std::map<int, std::string>>;
+    std::cout << is_contiguous_container_v<Dummy_container<int>>;
+    std::cout << is_contiguous_container_v<Continuous_container<float>> << "\n";
+
+    // Test
+    static_assert(contiguous_container<int> == is_contiguous_container_v<int>, "NOK");
+    static_assert(contiguous_container<int[4]> == is_contiguous_container_v<int[4]>, "NOK");
+    static_assert(contiguous_container<std::string> == is_contiguous_container_v<std::string>, "NOK");
+    static_assert(contiguous_container<std::array<int, 3>> == is_contiguous_container_v<std::array<int, 3>>, "NOK");
+    static_assert(contiguous_container<std::vector<float>> == is_contiguous_container_v<std::vector<float>>, "NOK");
+    static_assert(contiguous_container<std::map<int, std::string>> == is_contiguous_container_v<std::map<int, std::string>>, "NOK");
+    static_assert(contiguous_container<Dummy_container<int>> == is_contiguous_container_v<Dummy_container<int>>, "NOK");
+    static_assert(contiguous_container<Continuous_container<float>> == is_contiguous_container_v<Continuous_container<float>>, "NOK");
 
     return 0;
 }
