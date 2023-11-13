@@ -326,6 +326,66 @@ struct is_container_pointer<PtrT, ContainerT, std::enable_if_t<is_same_as_v<PtrT
 template <typename PtrT, typename ContainerT>
 constexpr bool is_container_pointer_v = is_container_pointer<PtrT, ContainerT>::value;
 
+template<typename T>
+class Dummy_container {
+public:
+    using value_type = T;
+    using iterator = T*;
+    using const_iterator = const T*;
+    using size_type = size_t;
+
+    iterator begin() { return &m_value; }
+    iterator end() { return &m_value; }
+
+    const_iterator cbegin() const { return &m_value; }
+    const_iterator cend() const { return &m_value; }
+
+    size_type size() const { return 1UL; }
+
+private:
+    T m_value;
+};
+
+template <typename T>
+concept container = requires(T a) {
+    {
+        a.begin()
+    } -> container_iterator<T>;
+    {
+        a.end()
+    } -> container_iterator<T>;
+    {
+        a.cbegin()
+    } -> container_iterator<T>;
+    {
+        a.cend()
+    } -> container_iterator<T>;
+    {
+        a.size()
+    } -> std::same_as<typename T::size_type>;
+    typename T::value_type;
+};
+
+template <typename T, typename = void>
+struct is_container : std::false_type
+{
+};
+
+// Checks whether type is a container
+template <typename T>
+struct is_container<T, std::enable_if_t<is_container_iterator_v<decltype(std::declval<T &>().begin()), T> &&
+                                        is_container_iterator_v<decltype(std::declval<T &>().end()), T> &&
+                                        is_container_iterator_v<decltype(std::declval<T &>().cbegin()), T> &&
+                                        is_container_iterator_v<decltype(std::declval<T &>().cend()), T> &&
+                                        is_same_as_v<decltype(std::declval<T &>().size()), typename T::size_type>>> : std::true_type
+{
+    using value_type = typename T::value_type;
+};
+
+// Helper for checking iterable type
+template <typename T>
+constexpr bool is_container_v = is_container<T>::value;
+
 int main(int /*argc*/, char * /*argv*/[])
 {
     std::cout << "meta" << std::endl;
@@ -610,6 +670,35 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(container_pointer<const int *, std::vector<int>> == is_container_pointer_v<const int *, std::vector<int>>, "NOK");
     static_assert(container_pointer<const std::pair<int, std::string> *, std::map<int, std::string>> == is_container_pointer_v<const std::pair<int, std::string> *, std::map<int, std::string>>, "NOK");
     static_assert(container_pointer<const std::pair<const int, std::string> *, std::map<int, std::string>> == is_container_pointer_v<const std::pair<const int, std::string> *, std::map<int, std::string>>, "NOK");
+
+    // With concepts
+    std::cout << "container with concepts\n";
+    std::cout << container<int>;
+    std::cout << container<int[4]>;
+    std::cout << container<std::string>;
+    std::cout << container<std::array<int, 3>>;
+    std::cout << container<std::vector<float>>;
+    std::cout << container<std::map<int, std::string>>;
+    std::cout << container<Dummy_container<int>> << "\n";
+
+    // With old-school
+    std::cout << "is_container_v old-school\n";
+    std::cout << is_container_v<int>;
+    std::cout << is_container_v<int[4]>;
+    std::cout << is_container_v<std::string>;
+    std::cout << is_container_v<std::array<int, 3>>;
+    std::cout << is_container_v<std::vector<float>>;
+    std::cout << is_container_v<std::map<int, std::string>>;
+    std::cout << is_container_v<Dummy_container<int>> << "\n";
+
+    // Test
+    static_assert(container<int> == is_container_v<int>, "NOK");
+    static_assert(container<int[4]> == is_container_v<int[4]>, "NOK");
+    static_assert(container<std::string> == is_container_v<std::string>, "NOK");
+    static_assert(container<std::array<int, 3>> == is_container_v<std::array<int, 3>>, "NOK");
+    static_assert(container<std::vector<float>> == is_container_v<std::vector<float>>, "NOK");
+    static_assert(container<std::map<int, std::string>> == is_container_v<std::map<int, std::string>>, "NOK");
+    static_assert(container<Dummy_container<int>> == is_container_v<Dummy_container<int>>, "NOK");
 
     return 0;
 }
