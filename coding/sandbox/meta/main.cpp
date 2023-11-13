@@ -354,7 +354,11 @@ template <typename T>
 class Continuous_container : public Dummy_container<T>
 {
 public:
+    Continuous_container(Dummy_container<T>::size_type) {}
+
     Dummy_container<T>::const_pointer data() { return nullptr; }
+
+    void resize(Dummy_container<T>::size_type) {}
 };
 
 template <typename T>
@@ -440,6 +444,28 @@ struct has_empty_method<T, std::enable_if_t<is_same_as_v<decltype(std::declval<T
 // Helper for checking has_empty_method
 template <typename T>
 constexpr bool has_empty_method_v = has_empty_method<T>::value;
+
+template <typename T>
+concept resizable_container =
+    container<T> &&
+    requires(T &c, typename T::size_type s) {
+        T(s);
+        c.resize(s);
+    };
+
+template <typename T, typename = void>
+struct is_resizable_container : std::false_type
+{
+};
+
+template <typename T>
+struct is_resizable_container<T, std::void_t<std::enable_if_t<is_container_v<T>>, decltype(T(typename T::size_type{})), decltype(std::declval<T &>().resize(typename T::size_type{}))>> : std::true_type
+{
+};
+
+// Helper for checking resizable_container type
+template <typename T>
+constexpr bool is_resizable_container_v = is_resizable_container<T>::value;
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -809,6 +835,29 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(has_empty<std::vector<int>> == has_empty_method_v<std::vector<int>>, "NOK");
     static_assert(has_empty<Big> == has_empty_method_v<Big>, "NOK");
     static_assert(has_empty<Dummy_container<double>> == has_empty_method_v<Dummy_container<double>>, "NOK");
+
+    // With concepts
+    std::cout << "resizable_container with concepts\n";
+    std::cout << resizable_container<int>;
+    std::cout << resizable_container<std::string>;
+    std::cout << resizable_container<std::vector<int>>;
+    std::cout << resizable_container<Big>;
+    std::cout << resizable_container<Continuous_container<int>> << "\n";
+
+    // Old-school
+    std::cout << "is_resizable_container_v old-school\n";
+    std::cout << is_resizable_container_v<int>;
+    std::cout << is_resizable_container_v<std::string>;
+    std::cout << is_resizable_container_v<std::vector<int>>;
+    std::cout << is_resizable_container_v<Big>;
+    std::cout << is_resizable_container_v<Continuous_container<int>> << "\n";
+
+    // Test
+    static_assert(resizable_container<int> == is_resizable_container_v<int>, "NOK");
+    static_assert(resizable_container<std::string> == is_resizable_container_v<std::string>, "NOK");
+    static_assert(resizable_container<std::vector<int>> == is_resizable_container_v<std::vector<int>>, "NOK");
+    static_assert(resizable_container<Big> == is_resizable_container_v<Big>, "NOK");
+    static_assert(resizable_container<Continuous_container<int>> == is_resizable_container_v<Continuous_container<int>>, "NOK");
 
     return 0;
 }
