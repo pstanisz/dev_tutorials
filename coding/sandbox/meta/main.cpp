@@ -344,6 +344,7 @@ public:
     const_iterator cend() const { return &m_value; }
 
     size_type size() const { return 1UL; }
+    bool empty() const { return false; }
 
 private:
     T m_value;
@@ -418,6 +419,27 @@ struct is_contiguous_container<T, std::enable_if_t<is_container_v<T> &&
 // Helper for checking iterable type
 template <typename T>
 constexpr bool is_contiguous_container_v = is_contiguous_container<T>::value;
+
+template <typename T>
+concept has_empty = requires(T a) {
+    {
+        a.empty()
+    } -> std::same_as<bool>;
+};
+
+template <typename T, typename = void>
+struct has_empty_method : std::false_type
+{
+};
+
+template <typename T>
+struct has_empty_method<T, std::enable_if_t<is_same_as_v<decltype(std::declval<T &>().empty()), bool>>> : std::true_type
+{
+};
+
+// Helper for checking has_empty_method
+template <typename T>
+constexpr bool has_empty_method_v = has_empty_method<T>::value;
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -764,6 +786,29 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(contiguous_container<std::map<int, std::string>> == is_contiguous_container_v<std::map<int, std::string>>, "NOK");
     static_assert(contiguous_container<Dummy_container<int>> == is_contiguous_container_v<Dummy_container<int>>, "NOK");
     static_assert(contiguous_container<Continuous_container<float>> == is_contiguous_container_v<Continuous_container<float>>, "NOK");
+
+    // With concepts
+    std::cout << "has_empty with concepts\n";
+    std::cout << has_empty<int>;
+    std::cout << has_empty<std::string>;
+    std::cout << has_empty<std::vector<int>>;
+    std::cout << has_empty<Big>;
+    std::cout << has_empty<Dummy_container<double>> << "\n";
+
+    // Old-school
+    std::cout << "has_empty old-school\n";
+    std::cout << has_empty_method_v<int>;
+    std::cout << has_empty_method_v<std::string>;
+    std::cout << has_empty_method_v<std::vector<int>>;
+    std::cout << has_empty_method_v<Big>;
+    std::cout << has_empty_method_v<Dummy_container<double>> << "\n";
+
+    // Test
+    static_assert(has_empty<int> == has_empty_method_v<int>, "NOK");
+    static_assert(has_empty<std::string> == has_empty_method_v<std::string>, "NOK");
+    static_assert(has_empty<std::vector<int>> == has_empty_method_v<std::vector<int>>, "NOK");
+    static_assert(has_empty<Big> == has_empty_method_v<Big>, "NOK");
+    static_assert(has_empty<Dummy_container<double>> == has_empty_method_v<Dummy_container<double>>, "NOK");
 
     return 0;
 }
