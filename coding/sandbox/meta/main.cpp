@@ -533,6 +533,33 @@ struct is_resizable_byte_buffer<T, Resizable_byte_buffer<T>> : std::true_type
 template <typename T>
 constexpr bool is_resizable_byte_buffer_v = is_resizable_byte_buffer<T>::value;
 
+struct Processor
+{
+    template<typename T>
+    T process_norestrict(std::span<uint8_t> input) {
+        T container(input.size());
+        std::copy(input.begin(), input.end(), container.begin());
+
+        return container;
+    }
+
+    template<typename T, typename = Resizable_container<T>>
+    T process_restrict1(std::span<const uint8_t> input) {
+        T container(input.size());
+        std::copy(input.begin(), input.end(), container.begin());
+
+        return container;
+    }
+
+    template<resizable_container T>
+    T process_restrict2(std::span<const uint8_t> input) {
+        T container(input.size());
+        std::copy(input.begin(), input.end(), container.begin());
+
+        return container;
+    }
+};
+
 int main(int /*argc*/, char * /*argv*/[])
 {
     std::cout << "meta" << std::endl;
@@ -602,8 +629,8 @@ int main(int /*argc*/, char * /*argv*/[])
 
     std::array<int, 3> arr = {1, 2, 3};
     std::vector<int> vec = {4, 5, 6, 7};
-    int carr[] = {8, 9};
-    std::span<int> sp(std::begin(carr), std::end(carr));
+    uint8_t carr[] = {8, 9};
+    std::span<uint8_t> sp(std::begin(carr), std::end(carr));
     // print_iterable(1);
     print_iterable(arr);
     print_iterable(vec);
@@ -947,6 +974,17 @@ int main(int /*argc*/, char * /*argv*/[])
     static_assert(resizable_byte_buffer<std::vector<int>> == is_resizable_byte_buffer_v<std::vector<int>>, "NOK");
     static_assert(resizable_byte_buffer<std::vector<uint8_t>> == is_resizable_byte_buffer_v<std::vector<uint8_t>>, "NOK");
     static_assert(resizable_byte_buffer<Continuous_container<uint8_t>> == is_resizable_byte_buffer_v<Continuous_container<uint8_t>>, "NOK");
+
+    // Checking template method with type restrictions
+    Processor p;
+    auto res1 = p.process_norestrict<std::vector<int>>(sp);
+    std::cout << "process_norestrict output vector size: " << res1.size() << "\n";
+
+    auto res2 = p.process_restrict1<std::vector<int>>(sp);
+    std::cout << "process_restrict1 output vector size: " << res2.size() << "\n";
+
+    auto res3 = p.process_restrict2<std::vector<int>>(sp);
+    std::cout << "process_restrict2 output vector size: " << res2.size() << "\n";
 
     return 0;
 }
