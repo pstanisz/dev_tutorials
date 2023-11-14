@@ -66,7 +66,7 @@ std::string operator==(const Big &, const Big &)
 }
 
 template <typename T>
-using streamable = typename std::enable_if_t<sizeof(std::declval<std::ostream &>() << std::declval<T &>()) != 0>;
+using Streamable = typename std::void_t<decltype(std::declval<std::ostream &>() << std::declval<T &>())>;
 
 std::ostream &operator<<(std::ostream &os, const Small &s)
 {
@@ -80,7 +80,7 @@ struct No_default_ctor
     No_default_ctor(int) {}
 };
 
-template <typename T, typename = streamable<T>>
+template <typename T, typename = Streamable<T>>
 void print_if_streamable(T t)
 {
     std::cout << t << "\n";
@@ -147,6 +147,13 @@ auto doubled_c(T input) -> typename std::enable_if_t<std::is_arithmetic_v<T>, T>
     return input + input;
 }
 
+template <typename T>
+using Iterable = typename std::void_t<decltype(std::declval<T &>().begin()),
+                                      decltype(std::declval<T &>().end()),
+                                      // decltype(std::declval<T &>().cbegin()),
+                                      // decltype(std::declval<T &>().cend()),
+                                      decltype(std::declval<T &>().size())>;
+
 template <typename T, typename = void>
 struct is_iterable : std::false_type
 {
@@ -154,11 +161,7 @@ struct is_iterable : std::false_type
 
 // Checks whether type is iterable
 template <typename T>
-struct is_iterable<T, std::void_t<decltype(std::declval<T &>().begin()),
-                                  decltype(std::declval<T &>().end()),
-                                  // decltype(std::declval<T &>().cbegin()),
-                                  // decltype(std::declval<T &>().cend()),
-                                  decltype(std::declval<T &>().size())>> : std::true_type
+struct is_iterable<T, Iterable<T>> : std::true_type
 {
 };
 
@@ -203,6 +206,9 @@ concept convertible_to =
         static_cast<ToT>(std::declval<FromT>());
     };
 
+template <class FromT, class ToT>
+using Convertible_to = typename std::void_t<decltype(std::is_convertible_v<FromT, ToT>), decltype(static_cast<ToT>(std::declval<FromT>()))>;
+
 // convertible_to implemented with SFINAE
 template <class FromT, class ToT, typename = void>
 struct is_convertible_to : std::false_type
@@ -210,7 +216,7 @@ struct is_convertible_to : std::false_type
 };
 
 template <class FromT, class ToT>
-struct is_convertible_to<FromT, ToT, std::void_t<decltype(std::is_convertible_v<FromT, ToT>), decltype(static_cast<ToT>(std::declval<FromT>()))>> : std::true_type
+struct is_convertible_to<FromT, ToT, Convertible_to<FromT, ToT>> : std::true_type
 {
 };
 
@@ -224,6 +230,10 @@ concept equality_comparable = requires(const std::remove_reference_t<T> &a, cons
     } -> convertible_to<bool>;
 };
 
+template <typename T>
+using Equality_comparable = typename std::enable_if_t<
+    is_convertible_to_v<decltype(std::declval<const std::remove_reference_t<T> &>() == std::declval<const std::remove_reference_t<T>>()), bool>>;
+
 // equality_comparable implemented with SFINAE
 template <class T, typename = void>
 struct is_equality_comparable : std::false_type
@@ -231,8 +241,7 @@ struct is_equality_comparable : std::false_type
 };
 
 template <class T>
-struct is_equality_comparable<T, std::enable_if_t<
-                                     is_convertible_to_v<decltype(std::declval<const std::remove_reference_t<T> &>() == std::declval<const std::remove_reference_t<T>>()), bool>>> : std::true_type
+struct is_equality_comparable<T, Equality_comparable<T>> : std::true_type
 {
 };
 
@@ -243,13 +252,19 @@ constexpr bool is_equality_comparable_v = is_equality_comparable<T>::value;
 template <class T>
 concept destructible = std::is_nothrow_destructible_v<T>;
 
+template <typename T>
+using Destructible = typename std::is_nothrow_destructible<T>;
+
 // is_destructible implemented with SFINAE
 template <class T>
-constexpr bool is_destructible_v = std::is_nothrow_destructible<T>::value;
+constexpr bool is_destructible_v = Destructible<T>::value;
 
 template <class T, class... Args>
 concept constructible_from =
     destructible<T> && std::is_constructible_v<T, Args...>;
+
+template <class T, class... Args>
+using Constructible_from = typename std::enable_if_t<is_destructible_v<T> && std::is_constructible_v<T, Args...>>;
 
 // is_constructible_from implemented with SFINAE
 template <class T, class... Args>
@@ -261,6 +276,9 @@ concept default_initializable =
     requires { T{}; } &&
     requires { ::new (static_cast<void *>(nullptr)) T; };
 
+template <typename T>
+using Default_initializable = typename std::void_t<std::enable_if_t<is_constructible_from_v<T>>, decltype(T{}), decltype(::new (static_cast<void *>(nullptr)) T)>;
+
 // is_default_initializable implemented with SFINAE
 template <class T, typename = void>
 struct is_default_initializable : std::false_type
@@ -268,7 +286,7 @@ struct is_default_initializable : std::false_type
 };
 
 template <class T>
-struct is_default_initializable<T, std::void_t<std::enable_if_t<is_constructible_from_v<T>>, decltype(T{}), decltype(::new (static_cast<void *>(nullptr)) T)>> : std::true_type
+struct is_default_initializable<T, Default_initializable<T>> : std::true_type
 {
 };
 
@@ -295,13 +313,17 @@ struct is_same_as<T, U, std::enable_if_t<std::is_same_v<T, U> && std::is_same_v<
 template <typename T, typename U>
 constexpr bool is_same_as_v = is_same_as<T, U>::value;
 
+template <typename IterT, typename ContainerT>
+using Container_iterator = typename std::enable_if_t<
+    is_same_as_v<IterT, typename ContainerT::iterator> || is_same_as_v<IterT, typename ContainerT::const_iterator>>;
+
 template <typename IterT, typename ContainerT, typename = void>
 struct is_container_iterator : std::false_type
 {
 };
 
 template <typename IterT, typename ContainerT>
-struct is_container_iterator<IterT, ContainerT, std::enable_if_t<is_same_as_v<IterT, typename ContainerT::iterator> || is_same_as_v<IterT, typename ContainerT::const_iterator>>> : std::true_type
+struct is_container_iterator<IterT, ContainerT, Container_iterator<IterT, ContainerT>> : std::true_type
 {
 };
 
@@ -313,13 +335,17 @@ concept container_pointer =
     std::same_as<PtrT, typename ContainerT::pointer> ||
     std::same_as<PtrT, typename ContainerT::const_pointer>;
 
+template <typename PtrT, typename ContainerT>
+using Container_pointer = typename std::enable_if_t<
+    is_same_as_v<PtrT, typename ContainerT::pointer> || is_same_as_v<PtrT, typename ContainerT::const_pointer>>;
+
 template <typename PtrT, typename ContainerT, typename = void>
 struct is_container_pointer : std::false_type
 {
 };
 
 template <typename PtrT, typename ContainerT>
-struct is_container_pointer<PtrT, ContainerT, std::enable_if_t<is_same_as_v<PtrT, typename ContainerT::pointer> || is_same_as_v<PtrT, typename ContainerT::const_pointer>>> : std::true_type
+struct is_container_pointer<PtrT, ContainerT, Container_pointer<PtrT, ContainerT>> : std::true_type
 {
 };
 
@@ -381,17 +407,20 @@ concept container = requires(T a) {
     typename T::value_type;
 };
 
+template <typename T>
+using Container = typename std::enable_if_t<is_container_iterator_v<decltype(std::declval<T &>().begin()), T> &&
+                                            is_container_iterator_v<decltype(std::declval<T &>().end()), T> &&
+                                            is_container_iterator_v<decltype(std::declval<T &>().cbegin()), T> &&
+                                            is_container_iterator_v<decltype(std::declval<T &>().cend()), T> &&
+                                            is_same_as_v<decltype(std::declval<T &>().size()), typename T::size_type>>;
+
 template <typename T, typename = void>
 struct is_container : std::false_type
 {
 };
 
 template <typename T>
-struct is_container<T, std::enable_if_t<is_container_iterator_v<decltype(std::declval<T &>().begin()), T> &&
-                                        is_container_iterator_v<decltype(std::declval<T &>().end()), T> &&
-                                        is_container_iterator_v<decltype(std::declval<T &>().cbegin()), T> &&
-                                        is_container_iterator_v<decltype(std::declval<T &>().cend()), T> &&
-                                        is_same_as_v<decltype(std::declval<T &>().size()), typename T::size_type>>> : std::true_type
+struct is_container<T, Container<T>> : std::true_type
 {
     using value_type = typename T::value_type;
 };
@@ -409,14 +438,17 @@ concept contiguous_container =
         } -> container_pointer<T>;
     };
 
+template <typename T>
+using Contiguous_container = typename std::enable_if_t<is_container_v<T> &&
+                                                       is_container_pointer_v<decltype(std::declval<T &>().data()), T>>;
+
 template <typename T, typename = void>
 struct is_contiguous_container : std::false_type
 {
 };
 
 template <typename T>
-struct is_contiguous_container<T, std::enable_if_t<is_container_v<T> &&
-                                                   is_container_pointer_v<decltype(std::declval<T &>().data()), T>>> : std::true_type
+struct is_contiguous_container<T, Contiguous_container<T>> : std::true_type
 {
 };
 
@@ -431,13 +463,16 @@ concept has_empty = requires(T a) {
     } -> std::same_as<bool>;
 };
 
+template <typename T>
+using Has_empty_method = typename std::enable_if_t<is_same_as_v<decltype(std::declval<T &>().empty()), bool>>;
+
 template <typename T, typename = void>
 struct has_empty_method : std::false_type
 {
 };
 
 template <typename T>
-struct has_empty_method<T, std::enable_if_t<is_same_as_v<decltype(std::declval<T &>().empty()), bool>>> : std::true_type
+struct has_empty_method<T, Has_empty_method<T>> : std::true_type
 {
 };
 
@@ -453,13 +488,19 @@ concept resizable_container =
         c.resize(s);
     };
 
+template <typename T>
+using Resizable_container = typename std::void_t<
+    std::enable_if_t<is_container_v<T>>,
+    decltype(T(typename T::size_type{})),
+    decltype(std::declval<T &>().resize(typename T::size_type{}))>;
+
 template <typename T, typename = void>
 struct is_resizable_container : std::false_type
 {
 };
 
 template <typename T>
-struct is_resizable_container<T, std::void_t<std::enable_if_t<is_container_v<T>>, decltype(T(typename T::size_type{})), decltype(std::declval<T &>().resize(typename T::size_type{}))>> : std::true_type
+struct is_resizable_container<T, Resizable_container<T>> : std::true_type
 {
 };
 
