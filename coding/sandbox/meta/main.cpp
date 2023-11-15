@@ -563,7 +563,7 @@ struct Processor
     }
 };
 
-template<typename T>
+template <typename T>
 concept integral = std::is_integral_v<T>;
 
 template <typename T>
@@ -599,6 +599,59 @@ public:
     void foo() { std::cout << "Derived with container\n"; }
     using value_type = typename T::value_type;
 };
+
+namespace experiment
+{
+
+    template <typename T>
+    class My_base
+    {
+    public:
+        using type = T;
+
+        My_base() = default;
+        My_base(const My_base &) = default;
+        My_base(My_base &&) noexcept = default;
+        My_base &operator=(const My_base &) = default;
+        My_base &operator=(My_base &&) noexcept = default;
+
+        constexpr explicit My_base(T v) : m_value(std::move(v)) {}
+
+        T &get() { return m_value; }
+        const T &get() const { return m_value; }
+
+    private:
+        T m_value;
+    };
+
+    template <typename T, typename = void>
+    class My_wrapper : public My_base<T>
+    {
+    public:
+        using My_base<T>::My_base;
+
+        void foo() { std::cout << "My_wrapper\n"; }
+    };
+
+    template <typename T>
+    class My_wrapper<T, std::enable_if_t<std::is_integral_v<T>>> : public My_base<T>
+    {
+    public:
+        using My_base<T>::My_base;
+
+        void foo() { std::cout << "My_wrapper integral\n"; }
+    };
+
+    template <typename T>
+    class My_wrapper<T, std::enable_if_t<is_container_v<T>>> : public My_base<T>
+    {
+    public:
+        using My_base<T>::My_base;
+
+        void foo() { std::cout << "My_wrapper container\n"; }
+    };
+
+}
 
 int main(int /*argc*/, char * /*argv*/[])
 {
@@ -1035,6 +1088,16 @@ int main(int /*argc*/, char * /*argv*/[])
 
     Derived<std::vector<int>> d2;
     d2.foo();
+
+    // Template class specialization with enable_if
+    experiment::My_wrapper<float> w0;
+    w0.foo();
+
+    experiment::My_wrapper<int> w1;
+    w1.foo();
+
+    experiment::My_wrapper<std::vector<int>> w2;
+    w2.foo();
 
     return 0;
 }
