@@ -535,29 +535,69 @@ constexpr bool is_resizable_byte_buffer_v = is_resizable_byte_buffer<T>::value;
 
 struct Processor
 {
-    template<typename T>
-    T process_norestrict(std::span<uint8_t> input) {
+    template <typename T>
+    T process_norestrict(std::span<uint8_t> input)
+    {
         T container(input.size());
         std::copy(input.begin(), input.end(), container.begin());
 
         return container;
     }
 
-    template<typename T, typename = Resizable_container<T>>
-    T process_restrict1(std::span<const uint8_t> input) {
+    template <typename T, typename = Resizable_container<T>>
+    T process_restrict1(std::span<const uint8_t> input)
+    {
         T container(input.size());
         std::copy(input.begin(), input.end(), container.begin());
 
         return container;
     }
 
-    template<resizable_container T>
-    T process_restrict2(std::span<const uint8_t> input) {
+    template <resizable_container T>
+    T process_restrict2(std::span<const uint8_t> input)
+    {
         T container(input.size());
         std::copy(input.begin(), input.end(), container.begin());
 
         return container;
     }
+};
+
+template<typename T>
+concept integral = std::is_integral_v<T>;
+
+template <typename T>
+class Base
+{
+public:
+    Base() {}
+
+private:
+    T m_value;
+};
+
+template <typename T>
+class Derived : public Base<T>
+{
+public:
+    void foo() { std::cout << "Derived\n"; }
+    using Base<T>::Base;
+};
+
+template <integral T>
+class Derived<T> : public Base<T>
+{
+public:
+    void foo() { std::cout << "Derived integral\n"; }
+    using Base<T>::Base;
+};
+
+template <container T>
+class Derived<T> : public Base<T>
+{
+public:
+    void foo() { std::cout << "Derived with container\n"; }
+    using value_type = typename T::value_type;
 };
 
 int main(int /*argc*/, char * /*argv*/[])
@@ -985,6 +1025,16 @@ int main(int /*argc*/, char * /*argv*/[])
 
     auto res3 = p.process_restrict2<std::vector<int>>(sp);
     std::cout << "process_restrict2 output vector size: " << res2.size() << "\n";
+
+    // Template class specialization with concepts
+    Derived<float> d0;
+    d0.foo();
+
+    Derived<int> d1;
+    d1.foo();
+
+    Derived<std::vector<int>> d2;
+    d2.foo();
 
     return 0;
 }
