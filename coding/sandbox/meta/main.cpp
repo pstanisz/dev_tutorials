@@ -648,6 +648,9 @@ namespace experiment
     public:
         using My_base<T>::My_base;
 
+        template<typename = Contiguous_container<T>>
+        void* data() { std::cout << "My_wrapper contiguous container\n"; return nullptr; }
+
         void foo() { std::cout << "My_wrapper container\n"; }
     };
 
@@ -1098,6 +1101,7 @@ int main(int /*argc*/, char * /*argv*/[])
 
     experiment::My_wrapper<std::vector<int>> w2;
     w2.foo();
+    w2.data();
 
     return 0;
 }
