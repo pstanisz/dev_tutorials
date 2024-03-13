@@ -4,6 +4,8 @@
 #include <vector>
 #include <span>
 
+import my_module;
+
 void print(std::span<int> numbers) {
     bool first{true};
     for (auto number : numbers) {
@@ -83,6 +85,9 @@ int main()
 
     std::array<int, 4> numbers_c {1,2,3,4};
     print(numbers_c);
+
+    // Modules
+    info(); // from my_module
 
     return EXIT_SUCCESS;
 }

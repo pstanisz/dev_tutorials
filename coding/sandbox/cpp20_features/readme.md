@@ -2,10 +2,10 @@
 
 Examples of **C++20** features.
 
-## TODO
+## Modules
 
-TODO
+For my environment it was necessary to build the iostream module first using:
 
 ```cpp
-    //TODO
+    g++ -std=c++20 -fmodules-ts -xc++-system-header iostream
 ```
