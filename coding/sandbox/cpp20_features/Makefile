@@ -16,4 +16,4 @@ $(TARGET).o: $(TARGET).cpp
 	$(CXX) $(CXXFLAGS) -c $(TARGET).cpp
 
 clean:
-	$(RM) $(TARGET)
+	$(RM) $(TARGET) $(TARGET).o my_module.o

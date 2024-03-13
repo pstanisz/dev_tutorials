@@ -87,7 +87,13 @@ int main()
     print(numbers_c);
 
     // Modules
-    info(); // from my_module
+    info(); // single function exported
+
+    auto res = add(124, 543);   // functions exported from export block
+    res = sub(res, 123);
+    std::cout << res << "\n";
+
+    helper::print(999);   // namespace 'helper' exported
 
     return EXIT_SUCCESS;
 }
