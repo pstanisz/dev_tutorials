@@ -8,6 +8,7 @@
 #include <ctime>
 #include <string_view>
 #include <cassert>
+#include <filesystem>
 
 namespace char_literals
 {
@@ -175,6 +176,11 @@ namespace string_view
     void print5(const uint8_t str[]);
 }
 
+namespace files
+{
+    void experiment();
+}
+
 int main()
 {
     std::cout << "C++17 features\n";
@@ -205,6 +211,9 @@ int main()
 
     // String view
     string_view::experiment();
+
+    // Filesystem
+    files::experiment();
 
     return EXIT_SUCCESS;
 }
@@ -350,13 +359,13 @@ void string_view::experiment()
     // print2(s1);
     print3(s1);
     print4(s1.data());
-    print5(reinterpret_cast<const uint8_t*>(s1.data()));
+    print5(reinterpret_cast<const uint8_t *>(s1.data()));
 
     print1(s2);
     print2(s2);
     print3(s2);
     print4(s2.data());
-    print5(reinterpret_cast<const uint8_t*>(s2.data()));
+    print5(reinterpret_cast<const uint8_t *>(s2.data()));
 }
 
 void string_view::print1(const std::string &str)
@@ -382,4 +391,47 @@ void string_view::print4(const char str[])
 void string_view::print5(const uint8_t str[])
 {
     std::cout << str << "\n";
+}
+
+void files::experiment()
+{
+
+    namespace fs = std::filesystem;
+
+    auto current_path = fs::current_path();
+    std::cout << "Current path: " << current_path << "\n";
+
+    auto src_file_path = current_path.append("cpp17_features.cpp");
+    std::cout << "Source file path: " << src_file_path << "\n";
+
+    if (fs::exists(src_file_path))
+    {
+        std::cout << "Source file exists, size: " << fs::file_size(src_file_path) << " bytes\n";
+    }
+    else
+    {
+        std::cout << "Source file does not exist\n";
+    }
+
+    fs::current_path(fs::temp_directory_path());
+    std::cout << "Current path: " << fs::current_path() << "\n";
+    fs::create_directories("test/1/a");
+    fs::create_directory("test/1/b");
+    fs::create_directories("test/2/a");
+    fs::create_directory("test/2/b");
+
+    for (const auto &dir_entry : fs::recursive_directory_iterator("test"))
+    {
+        std::cout << dir_entry << "\n";
+    }
+
+    fs::remove_all("test");
+    if (fs::exists("test"))
+    {
+        std::cout << "test directory still present!\n";
+    }
+    else
+    {
+        std::cout << "test directory removed\n";
+    }
 }
