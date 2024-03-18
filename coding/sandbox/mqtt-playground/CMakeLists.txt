@@ -35,6 +35,8 @@ target_include_directories(
     ${PROJECT_INC_DIR}
 )
 
+target_link_libraries(${TARGET_NAME} PUBLIC -lpaho-mqttpp3 -lpaho-mqtt3as)
+
 target_compile_options(${TARGET_NAME} PUBLIC -Wall -Wextra -pedantic)
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
 
