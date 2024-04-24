@@ -33,7 +33,7 @@ namespace simple
 
         [[nodiscard]] constexpr T *allocate(size_type n)
         {
-            std::cout << "Counting_allocator::allocate memory for " << n << " element(s)\n";
+            std::cout << "Allocate memory for " << n << " element(s)\n";
             if (n > std::numeric_limits<size_type>::max() / sizeof(T))
             {
                 throw std::bad_alloc();
@@ -52,7 +52,7 @@ namespace simple
 
         constexpr void deallocate(T *ptr, size_type) noexcept
         {
-            std::cout << "Counting_allocator::deallocate memory\n";
+            std::cout << "Deallocate memory\n";
             ::operator delete(ptr);
 
             m_allocated_objs = 0;
@@ -70,12 +70,10 @@ int main()
     std::cout << "allocators\n";
 
     std::vector<int, simple::Counting_allocator<int>> vec;
-    vec.push_back(1); 
-    vec.push_back(2);
-    vec.push_back(3);
-    vec.push_back(4);
-    vec.push_back(5);
-    vec.push_back(6);
+    for (int i = 0; i < 10; ++i)
+    {
+        vec.push_back(i);
+    }
 
     return EXIT_SUCCESS;
 }
