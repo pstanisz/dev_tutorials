@@ -7,6 +7,14 @@
 namespace simple
 {
 
+    /**
+     * @brief A custom allocator that counts the number of allocated objects.
+     *
+     * This allocator provides the basic functionality to allocate and deallocate memory
+     * for objects of type T. It also keeps track of the total number of allocated objects.
+     *
+     * @tparam T The type of the elements to allocate memory for.
+     */
     template <typename T>
     class Counting_allocator
     {
