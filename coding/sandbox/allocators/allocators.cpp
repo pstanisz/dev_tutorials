@@ -155,8 +155,7 @@ namespace complex
         {
             std::cout << "Safe_allocator ctor\n";
 
-            std::cout << "Allocated sections: " << m_allocated_sections.size() << "\n";
-            std::cout << "Free sections: " << m_free_sections.size() << "\n";
+            show_stats();
         }
 
         template <typename U>
@@ -164,16 +163,14 @@ namespace complex
         {
             std::cout << "Safe_allocator copy ctor\n";
 
-            std::cout << "Allocated sections: " << m_allocated_sections.size() << "\n";
-            std::cout << "Free sections: " << m_free_sections.size() << "\n";
+            show_stats();
         }
 
         ~Safe_allocator() noexcept
         {
             std::cout << "Safe_allocator dtor\n";
 
-            std::cout << "Allocated sections: " << m_allocated_sections.size() << "\n";
-            std::cout << "Free sections: " << m_free_sections.size() << "\n";
+            show_stats();
         }
 
         [[nodiscard]] constexpr T *allocate(size_type n)
@@ -194,7 +191,7 @@ namespace complex
                 throw std::bad_alloc();
             }
 
-            auto free_section = *it;
+            auto &free_section = *it;
 
             auto allocated_section = Section(free_section.m_begin, n);
             m_allocated_sections.push_back(allocated_section);
@@ -209,8 +206,7 @@ namespace complex
                 m_free_sections.erase(it);
             }
 
-            std::cout << "Allocated sections: " << m_allocated_sections.size() << "\n";
-            std::cout << "Free sections: " << m_free_sections.size() << "\n";
+            show_stats();
 
             return allocated_section.m_begin;
         }
@@ -232,8 +228,7 @@ namespace complex
 
             // TODO: merge free neighbouring sections
 
-            std::cout << "Allocated sections: " << m_allocated_sections.size() << "\n";
-            std::cout << "Free sections: " << m_free_sections.size() << "\n";
+            show_stats();
         }
 
     private:
@@ -244,6 +239,23 @@ namespace complex
             T *m_begin;
             size_type m_length;
         };
+
+        size_type size_in_bytes(const std::vector<Section> &sections) const
+        {
+            size_type bytes{};
+            for (auto section : sections)
+            {
+                bytes += sizeof(T) * section.m_length;
+            }
+
+            return bytes;
+        }
+
+        void show_stats() const
+        {
+            std::cout << "Allocated sections: " << m_allocated_sections.size() << ", bytes: " << size_in_bytes(m_allocated_sections) << "\n";
+            std::cout << "Free sections: " << m_free_sections.size() << ", bytes: " << size_in_bytes(m_free_sections) << "\n";
+        }
 
         T m_memory[MAX];
 
