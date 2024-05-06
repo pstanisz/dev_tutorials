@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <vector>
+#include <set>
 #include <algorithm>
 
 namespace simple
@@ -194,16 +195,14 @@ namespace complex
             auto &free_section = *it;
 
             auto allocated_section = Section(free_section.m_begin, n);
-            m_allocated_sections.push_back(allocated_section);
+            m_allocated_sections.insert(allocated_section);
 
-            if (free_section.m_length > n)
+            auto new_free_section = Section(free_section.m_begin + n, free_section.m_length - n);
+            m_free_sections.erase(it);
+
+            if (new_free_section.m_length > 0U)
             {
-                free_section.m_begin += n;
-                free_section.m_length -= n;
-            }
-            else
-            {
-                m_free_sections.erase(it);
+                m_free_sections.insert(new_free_section);
             }
 
             show_stats();
@@ -223,7 +222,7 @@ namespace complex
                 std::cerr << "Invalid deallocation requested?\n";
             }
 
-            m_free_sections.push_back(*it);
+            m_free_sections.insert(*it);
             m_allocated_sections.erase(it);
 
             // TODO: merge free neighbouring sections
@@ -240,7 +239,18 @@ namespace complex
             size_type m_length;
         };
 
-        size_type size_in_bytes(const std::vector<Section> &sections) const
+        friend bool operator<(const Section &lhs, const Section &rhs)
+        {
+            return lhs.m_begin < rhs.m_begin;
+        }
+
+        friend bool operator==(const Section &lhs, const Section &rhs)
+        {
+            return lhs.m_begin == rhs.m_begin;
+        }
+
+        template <typename Container>
+        size_type size_in_bytes(const Container &sections) const
         {
             size_type bytes{};
             for (auto section : sections)
@@ -254,13 +264,22 @@ namespace complex
         void show_stats() const
         {
             std::cout << "Allocated sections: " << m_allocated_sections.size() << ", bytes: " << size_in_bytes(m_allocated_sections) << "\n";
+
+            for (const auto &section : m_allocated_sections)
+            {
+                std::cout << "\tSection at " << static_cast<const int*>(section.m_begin) << ", bytes: " << sizeof(T) * section.m_length << "\n";
+            }
             std::cout << "Free sections: " << m_free_sections.size() << ", bytes: " << size_in_bytes(m_free_sections) << "\n";
+            for (const auto &section : m_free_sections)
+            {
+                std::cout << "\tSection at " << static_cast<const int*>(section.m_begin) << ", bytes: " << sizeof(T) * section.m_length << "\n";
+            }
         }
 
         T m_memory[MAX];
 
-        std::vector<Section> m_allocated_sections;
-        std::vector<Section> m_free_sections;
+        std::set<Section> m_allocated_sections;
+        std::set<Section> m_free_sections;
     };
 
 }
